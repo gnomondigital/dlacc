@@ -1,5 +1,6 @@
 import torch
 
+
 def export(model, onnx_model_path, seq_len=384):
     with torch.no_grad():
         inputs = {
@@ -35,6 +36,3 @@ def export(model, onnx_model_path, seq_len=384):
                 "input_mask": symbolic_names,
             },
         )
-
-
-
