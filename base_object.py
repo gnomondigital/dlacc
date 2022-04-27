@@ -1,4 +1,4 @@
-class BaseObject:
+class BaseClass:
     def dump_object(self):
         attrs = vars(self)
         # {'kids': 0, 'name': 'Dog', 'color': 'Spotted', 'age': 10, 'legs': 2, 'smell': 'Alot'}
@@ -10,3 +10,7 @@ class BaseObject:
 
     def raise_default_error(self):
         raise RuntimeError(self.dump_object())
+
+    def _print(self, content):
+        print("[%s]" % (self.__class__.__name__), end=" ")
+        print(content)

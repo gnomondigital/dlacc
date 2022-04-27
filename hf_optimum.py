@@ -1,19 +1,23 @@
-from base_object import BaseObject
+from base_object import BaseClass
 
 from utils import get_jit_traced_model, optimize_model
 from graph_module import GraphModuleWrapper
 
 
-class Optimum(BaseObject):
+class Optimum(BaseClass):
     """
     tokenizer, model = from_hf_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-    example_batch_input = ["This is an example sentence", "Each sentence is converted"]
-    target = "llvm"
-    device = tvm.device(str(target), 0)
+    example_batch_input = ["This is an example sentence", "Each sentence is converted"] 
+    encoded_input = tokenizer(
+        example_batch_input, padding=True, truncation=True, return_tensors="pt"
+    )
     optimum = Optimum(model, tokenizer)
-    optimum.run(example_batch_input, target, device)
+    target = tvm.target.arm_cpu()
+    device = tvm.cpu(0)   
+    optimum = Optimum(model, tokenizer)
+    optimum.run(encoded_input, target, device)
     model = optimum.get_best_model()
-    output = model(batch_input)
+    output = model(encoded_input)
     """
 
     def __init__(self, model, tokenizer, framework_type="pt"):
@@ -34,6 +38,7 @@ class Optimum(BaseObject):
                 ]
                 ansor_engine = optimize_model(
                     jit_traced_model,
+                    self.network_name,
                     shape_list,
                     target,
                     device,

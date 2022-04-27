@@ -1,4 +1,4 @@
-from base_object import BaseObject
+from base_object import BaseClass
 
 import tvm
 from tvm import auto_scheduler
@@ -6,15 +6,11 @@ import tvm.relay as relay
 from tvm.contrib import graph_executor
 
 
-class AnsorEngine(BaseObject):
+class AnsorEngine(BaseClass):
     def __init__(self, network_name, target, device) -> None:
         self.network_name = network_name
         self.target = target
         self.device = device
-
-    def _print(self, content):
-        print("[Ansor]", end=" ")
-        print(content)
 
     def ansor_call_pt(self, jit_traced_model, input_infos, default_dtype):
         mod, params = tvm.relay.frontend.from_pytorch(
@@ -28,11 +24,10 @@ class AnsorEngine(BaseObject):
         # Extract tasks from the network
         self._print("Extract tasks...")
         tasks, task_weights = auto_scheduler.extract_tasks(
-            self.mod["main"], self.params, self.device
+            self.mod["main"], self.params, self.target
         )
-        self.log_file = (
-            "ansor--tuning--{self.network_name}--{self.target}-{self.device}.json"
-        )
+        self.log_file = "./ansor_tuning/%s-%s-%s.json" % (self.network_name, str(self.target), str(self.device))
+        
         self._print("Begin tuning...")
         tuner = auto_scheduler.TaskScheduler(tasks, task_weights)
         tune_option = auto_scheduler.TuningOptions(
