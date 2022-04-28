@@ -4,7 +4,7 @@
 ## Build from source
 ```
 git clone https://gitlab.gnomondigital.com/fzyuan/dl_acceleration.git
-
+```
 ```
 export TOKENIZERS_PARALLELISM=false
 ```
