@@ -10,7 +10,8 @@ export TOKENIZERS_PARALLELISM=false
 ```
 # Features
 - Import HuggingFace Models
-- 
+- Automatic Optimization
+- Benchmark
 # Usage
 ```python
 tokenizer, model = from_hf_pretrained("sentence-transformers/all-MiniLM-L6-v2")
@@ -24,3 +25,11 @@ optimum.run(encoded_input, target)
 optimized_model = optimum.get_best_model()
 output = optimized_model(encoded_input)
 ```
+## Supported Target List
+```
+['aocl', 'hybrid', 'nvptx', 'sdaccel', 'opencl', 'metal', 'hexagon', 'aocl_sw_emu', 'rocm', 'webgpu', 'llvm', 'cuda', 'vulkan', 'ext_dev', 'c']
+```
+Notifications: 
+Generally: 
+- Use 'cuda' for GPU backend;
+- Use 'llvm' for CPU backend.
