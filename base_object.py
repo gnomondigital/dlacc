@@ -1,8 +1,6 @@
 class BaseClass:
     def dump_object(self):
         attrs = vars(self)
-        # {'kids': 0, 'name': 'Dog', 'color': 'Spotted', 'age': 10, 'legs': 2, 'smell': 'Alot'}
-        # now dump this in some way or another
         content = ""
         if len(attrs):
             content = ", ".join("%s: %s" % item for item in attrs.items())

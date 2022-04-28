@@ -1,16 +1,16 @@
 from base_object import BaseClass
-
+import os
 import tvm
 from tvm import auto_scheduler
+from tvm.auto_scheduler.search_task import TuningOptions
 import tvm.relay as relay
 from tvm.contrib import graph_executor
 
 
 class AnsorEngine(BaseClass):
-    def __init__(self, network_name, target, device) -> None:
-        self.network_name = network_name
+    def __init__(self, network_name, target) -> None:
+        self.network_name = network_name.replace("/", "_")
         self.target = target
-        self.device = device
 
     def ansor_call_pt(self, jit_traced_model, input_infos, default_dtype):
         mod, params = tvm.relay.frontend.from_pytorch(
@@ -21,13 +21,26 @@ class AnsorEngine(BaseClass):
         return self
 
     def ansor_run_tuning(self, num_measure_trials=500):
-        # Extract tasks from the network
+        self._print("Run tuning for network=%s" % self.network_name)
+        self.log_file = (
+            "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d.json"
+            % (
+                self.network_name,
+                str(self.target),
+                num_measure_trials,
+            )
+        )
+        # if os.path.exists(self.log_file): # DISABLE WHEN DEPLOYMENT
+        #     self._print(
+        #         "Historical configuration file %s found, tuning will not be executed."
+        #         % self.log_file
+        #     )
+        #     return self
         self._print("Extract tasks...")
         tasks, task_weights = auto_scheduler.extract_tasks(
             self.mod["main"], self.params, self.target
         )
-        self.log_file = "./ansor_tuning/%s-%s-%s.json" % (self.network_name, str(self.target), str(self.device))
-        
+
         self._print("Begin tuning...")
         tuner = auto_scheduler.TaskScheduler(tasks, task_weights)
         tune_option = auto_scheduler.TuningOptions(
@@ -51,16 +64,20 @@ class AnsorEngine(BaseClass):
             tuner.tune(tune_option, search_policy=search_policy)
         else:
             tuner.tune(tune_option)
-        self._print("Tuning Success.")
+        self._print("Tuning Success, configuration file saved at %s" % self.log_file)
         return self
 
-    def ansor_compile(self):
+    def ansor_compile(self, log_file=None):
         # Compile with the history best
-        self._print("Compile...")
+        if log_file:
+            self.log_file = log_file
+        self._print("Compile with %s..." % self.log_file)
         with auto_scheduler.ApplyHistoryBest(self.log_file):
             with tvm.transform.PassContext(
                 opt_level=3, config={"relay.backend.use_auto_scheduler": True}
             ):
                 lib = relay.build(self.mod, target=self.target, params=self.params)
+        self.device = tvm.device(str(self.target), 0)
         self.module = graph_executor.GraphModule(lib["default"](self.device))
+        self._print("Compile success.")
         return self
