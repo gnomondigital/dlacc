@@ -10,10 +10,11 @@ network_list = [
     "facebook/bart-base",
     "roberta-base",
     "distilgpt2",
-    "bert-base-uncased"
+    "bert-base-uncased",
 ]
 example_batch_input = ["This is an example sentence", "Each sentence is converted"]
 target = tvm.target.arm_cpu()
+
 
 def test_all():
     for network_name in network_list:
@@ -31,6 +32,6 @@ def test_all():
         for i in range(len(original_output)):
             assert_allclose(original_output[i], output[i], rtol=1e-4, atol=1e-4)
 
-        
+
 if __name__ == "__main__":
     test_all()

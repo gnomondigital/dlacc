@@ -6,7 +6,9 @@ class GraphModuleWrapper:
     def __call__(self, inputs_dict, time_evaluater=False):
         self.module.set_input(**inputs_dict)
         if time_evaluater:
-            ftimer = self.module.module.time_evaluator("run", self.device, min_repeat_ms=500, repeat=3)
+            ftimer = self.module.module.time_evaluator(
+                "run", self.device, min_repeat_ms=500, repeat=3
+            )
             return ftimer
         self.module.run()
         num_outputs = self.module.get_num_outputs()

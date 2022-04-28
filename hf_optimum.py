@@ -23,7 +23,9 @@ class Optimum(BaseClass):
         self.origin_model = model
         self.framework_type = framework_type
 
-    def run(self, encoded_input, target, mode="ansor", num_measure_trials=500, log_file=None):
+    def run(
+        self, encoded_input, target, mode="ansor", num_measure_trials=500, log_file=None
+    ):
         if self.framework_type == "pt":
             if mode == "ansor":
                 jit_traced_model = get_jit_traced_model(
@@ -41,7 +43,7 @@ class Optimum(BaseClass):
                     framework_type=self.framework_type,
                     mode=mode,
                     num_measure_trials=num_measure_trials,
-                    log_file=log_file
+                    log_file=log_file,
                 )
                 if self.ansor_engine.module:
                     self.module = self.ansor_engine.module

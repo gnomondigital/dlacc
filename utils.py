@@ -23,19 +23,26 @@ def optimize_model(
     log_file=None,
     framework_type="pt",
     mode="ansor",
-    num_measure_trials=500
+    num_measure_trials=500,
 ):
     if framework_type == "pt":
         if mode == "ansor":
             ae = AnsorEngine(network_name, target)
             if log_file:
-                print("Historical configuration file %s found, tuning will not be executed."% log_file)
-                return ae.ansor_call_pt(traced_model, input_infos, "int64").ansor_compile(log_file)
-            else:
+                print(
+                    "Historical configuration file %s found, tuning will not be executed."
+                    % log_file
+                )
                 return ae.ansor_call_pt(
                     traced_model, input_infos, "int64"
-                ).ansor_run_tuning(num_measure_trials=num_measure_trials).ansor_compile()
-                
+                ).ansor_compile(log_file)
+            else:
+                return (
+                    ae.ansor_call_pt(traced_model, input_infos, "int64")
+                    .ansor_run_tuning(num_measure_trials=num_measure_trials)
+                    .ansor_compile()
+                )
+
         if mode == "autotvm":
             raise NotImplementedError
         else:

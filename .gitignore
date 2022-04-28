@@ -1,3 +1,4 @@
 __pycache__/
 tuning_log/
 .pytest_cache/
+total_latency.tsv
