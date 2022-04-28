@@ -30,6 +30,9 @@ output = optimized_model(encoded_input)
 ['aocl', 'hybrid', 'nvptx', 'sdaccel', 'opencl', 'metal', 'hexagon', 'aocl_sw_emu', 'rocm', 'webgpu', 'llvm', 'cuda', 'vulkan', 'ext_dev', 'c']
 ```
 Notifications: 
+
 Generally: 
 - Use 'cuda' for GPU backend;
 - Use 'llvm' for CPU backend.
+
+specify num_measure_trials=20000 for best performance tunning for optimum.run() method call.
