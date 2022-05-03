@@ -35,11 +35,13 @@ class Optimum(BaseClass):
                     (i.debugName().split(".")[0], i.type().sizes())
                     for i in list(jit_traced_model.graph.inputs())[1:]
                 ]
+                batch_size = shape_list[0][1][0]
                 self.ansor_engine = optimize_model(
                     jit_traced_model,
                     self.network_name,
                     shape_list,
                     target,
+                    batch_size,
                     framework_type=self.framework_type,
                     mode=mode,
                     num_measure_trials=num_measure_trials,

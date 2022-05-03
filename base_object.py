@@ -1,3 +1,6 @@
+import datetime
+
+
 class BaseClass:
     def dump_object(self):
         attrs = vars(self)
@@ -10,5 +13,12 @@ class BaseClass:
         raise RuntimeError(self.dump_object())
 
     def _print(self, content):
-        print("[%s]" % (self.__class__.__name__), end=" ")
+        print(
+            "[%s][%s]"
+            % (
+                datetime.datetime.now().strftime("%d-%m-%Y-%H:%M:%S"),
+                self.__class__.__name__,
+            ),
+            end=" ",
+        )
         print(content)

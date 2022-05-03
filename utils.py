@@ -20,6 +20,7 @@ def optimize_model(
     network_name,
     input_infos,
     target,
+    batch_size,
     log_file=None,
     framework_type="pt",
     mode="ansor",
@@ -27,7 +28,7 @@ def optimize_model(
 ):
     if framework_type == "pt":
         if mode == "ansor":
-            ae = AnsorEngine(network_name, target)
+            ae = AnsorEngine(network_name, target, batch_size)
             if log_file:
                 print(
                     "Historical configuration file %s found, tuning will not be executed."

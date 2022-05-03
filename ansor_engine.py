@@ -8,9 +8,10 @@ from tvm.contrib import graph_executor
 
 
 class AnsorEngine(BaseClass):
-    def __init__(self, network_name, target) -> None:
+    def __init__(self, network_name, target, batch_size) -> None:
         self.network_name = network_name.replace("/", "_")
         self.target = target
+        self.batch_size = batch_size
 
     def ansor_call_pt(self, jit_traced_model, input_infos, default_dtype):
         mod, params = tvm.relay.frontend.from_pytorch(
@@ -23,19 +24,9 @@ class AnsorEngine(BaseClass):
     def ansor_run_tuning(self, num_measure_trials=500):
         self._print("Run tuning for network=%s" % self.network_name)
         self.log_file = (
-            "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d.json"
-            % (
-                self.network_name,
-                str(self.target),
-                num_measure_trials,
-            )
+            "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d.json"
+            % (self.network_name, str(self.target), num_measure_trials, self.batch_size)
         )
-        # if os.path.exists(self.log_file): # DISABLE WHEN DEPLOYMENT
-        #     self._print(
-        #         "Historical configuration file %s found, tuning will not be executed."
-        #         % self.log_file
-        #     )
-        #     return self
         self._print("Extract tasks...")
         tasks, task_weights = auto_scheduler.extract_tasks(
             self.mod["main"], self.params, self.target
@@ -71,7 +62,7 @@ class AnsorEngine(BaseClass):
         # Compile with the history best
         if log_file:
             self.log_file = log_file
-        self._print("Compile with %s..." % self.log_file)
+        self._print("Compile with %s" % self.log_file)
         with auto_scheduler.ApplyHistoryBest(self.log_file):
             with tvm.transform.PassContext(
                 opt_level=3, config={"relay.backend.use_auto_scheduler": True}

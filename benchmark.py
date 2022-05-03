@@ -3,27 +3,43 @@ from hf_optimum import Optimum
 import numpy as np
 import argparse
 import timeit
+import datetime
+from sklearn.datasets import fetch_20newsgroups
+import os
+import glob
+
+texts = fetch_20newsgroups(subset="train").data
 
 
-def benchmark(network_name, batch_size, target, log_file):
-    example_batch_input = ["This is an example sentence", "Each sentence is converted"]
+def logfile_loader(network_name, target, num_measure_trials, batch_size):
+    network_name = network_name.replace("/", "_")
+    path = (
+        "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d.json"
+        % (network_name, target, num_measure_trials, batch_size)
+    )
+    file = glob.glob(path)
+    return file
+
+
+def benchmark(network_name, batch_size, target, log_file, num_measure_trials=1000):
+    example_batch_input = texts[:batch_size]
     tokenizer, model = from_hf_pretrained(network_name)
     encoded_input = tokenizer(
         example_batch_input, padding=True, truncation=True, return_tensors="pt"
     )
     optimum = Optimum(model, network_name)
-    optimum.run(encoded_input, target, num_measure_trials=500, log_file=log_file)
+    optimum.run(
+        encoded_input, target, num_measure_trials=num_measure_trials, log_file=log_file
+    )
     optimized_model = optimum.get_best_model()
-    ftimer = optimized_model(encoded_input, time_evaluater=True)
-
+    time_res = optimized_model(encoded_input, time_evaluator=True)
     to_comp = (
         np.array(
             timeit.Timer(lambda: model(**encoded_input)).repeat(repeat=3, number=10)
         )
         / 10
     )
-
-    return np.array(ftimer().results) * 1000, to_comp * 1000
+    return time_res * 1000, to_comp * 1000
 
 
 if __name__ == "__main__":
@@ -35,10 +51,10 @@ if __name__ == "__main__":
         help="The compilation target.",
     )
     parser.add_argument(
-        "--log_file",
-        type=str,
-        default="",
-        help="The log file path.",
+        "--logfile",
+        default=[],
+        nargs="*",
+        help="The log file path. A list corresponding to each network.",
     )
     # Benchmark
     networks = [
@@ -48,15 +64,38 @@ if __name__ == "__main__":
         "roberta-base",
         "distilgpt2",
         "bert-base-uncased",
+        "xlm-roberta-large-finetuned-conll03-english",
+        "nlptown/bert-base-multilingual-uncased-sentiment",
     ]
-    parser.add_argument("--batch-size", type=int, default=1, help="The batch size")
+    parser.add_argument(
+        "--batchsize_range",
+        type=int,
+        nargs="+",
+        default=[],
+        help="The batch size range, a triple (start, end, step), for example: (100, 1000, 100)",
+    )
     args = parser.parse_args()
+    result_file_name = "./benchmark/result-%s.txt" % datetime.datetime.now().strftime(
+        "%d-%m-%Y-%H:%M:%S"
+    )
+    os.makedirs(os.path.dirname(result_file_name), exist_ok=True)
+    result_file = open(result_file_name, "w")
+    num_measure_trials = 10
     result_messages = []
-    for network in networks[:1]:
-        for batch_size in [args.batch_size]:
-            print("Benchmark %s ..." % network)
+    for i, network in enumerate(networks):
+        for batch_size in range(
+            args.batchsize_range[0], args.batchsize_range[1], args.batchsize_range[2]
+        ):
+            now = datetime.datetime.now().strftime("%d-%m-%Y-%H:%M:%S")
+            print("[%s]Benchmark %s, batch_size=%d ..." % (now, network, batch_size))
+            files = logfile_loader(network, args.target, num_measure_trials, batch_size)
+            logfile = files[0] if len(files) else None
             prof_res, to_comp_res = benchmark(
-                network, batch_size, args.target, args.log_file
+                network,
+                batch_size,
+                args.target,
+                logfile,
+                num_measure_trials=num_measure_trials,
             )
             message = (
                 "%-18s %-12s %-19s (%s)"
@@ -74,15 +113,26 @@ if __name__ == "__main__":
                     "%.2f ms" % np.std(to_comp_res),
                 ),
             )
+            print("Performance Comparison:")
+            print(message)
+            for msg in message:
+                result_file.write(msg + "\n")
             result_messages.append(message)
 
-    # Print result
-    print("-------------------------------------------------------------")
-    print(
-        "%-18s %-12s %-20s"
-        % ("Network Name", "Batch size", "Mean Inference Time (std dev)")
-    )
-    print("-------------------------------------------------------------")
-    for line in result_messages:
-        print(line)
-    print("-------------------------------------------------------------")
+    # # Print result
+    # print("-----------------Original Execution--------------------------")
+    # print(
+    #     "%-18s %-12s %-20s"
+    #     % ("Network Name", "Batch size", "Mean Inference Time (std dev)")
+    # )
+    # for line in result_messages:
+    #     print(line[1])
+    # print("-------------------------------------------------------------")
+    # print("-----------------Optimized Execution--------------------------")
+    # print(
+    #     "%-18s %-12s %-20s"
+    #     % ("Network Name", "Batch size", "Mean Inference Time (std dev)")
+    # )
+    # for line in result_messages:
+    #     print(line[0])
+    # print("-------------------------------------------------------------")
