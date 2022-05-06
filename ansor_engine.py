@@ -5,6 +5,11 @@ from tvm import auto_scheduler
 from tvm.auto_scheduler.search_task import TuningOptions
 import tvm.relay as relay
 from tvm.contrib import graph_executor
+from pathlib import Path
+
+import logging
+
+logging.getLogger("autotvm").setLevel(logging.DEBUG)
 
 
 class AnsorEngine(BaseClass):
@@ -36,7 +41,10 @@ class AnsorEngine(BaseClass):
         tuner = auto_scheduler.TaskScheduler(tasks, task_weights)
         tune_option = auto_scheduler.TuningOptions(
             num_measure_trials=num_measure_trials,  # change this to 20000 to achieve the best performance
-            runner=auto_scheduler.LocalRunner(repeat=20, enable_cpu_cache_flush=True),
+            runner=auto_scheduler.LocalRunner(
+                repeat=10, enable_cpu_cache_flush=True, timeout=40
+            ),
+            early_stopping=300,
             measure_callbacks=[auto_scheduler.RecordToFile(self.log_file)],
         )
         use_sparse = False
@@ -55,6 +63,13 @@ class AnsorEngine(BaseClass):
             tuner.tune(tune_option, search_policy=search_policy)
         else:
             tuner.tune(tune_option)
+        # mark log as finished
+        p = Path(self.log_file)
+        name_without_extension = p.stem
+        ext = p.suffix
+        new_file_name = f"{name_without_extension}_finished"
+        p.rename(Path(p.parent, new_file_name + ext))
+        self.log_file = str(p.parent) + new_file_name + ext
         self._print("Tuning Success, configuration file saved at %s" % self.log_file)
         return self
 

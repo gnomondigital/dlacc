@@ -24,7 +24,12 @@ class Optimum(BaseClass):
         self.framework_type = framework_type
 
     def run(
-        self, encoded_input, target, mode="ansor", num_measure_trials=500, log_file=None
+        self,
+        encoded_input,
+        target,
+        mode="ansor",
+        num_measure_trials=1000,
+        log_file=None,
     ):
         if self.framework_type == "pt":
             if mode == "ansor":

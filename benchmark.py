@@ -7,14 +7,16 @@ import datetime
 from sklearn.datasets import fetch_20newsgroups
 import os
 import glob
+import tvm
 
 texts = fetch_20newsgroups(subset="train").data
+num_measure_trials = 20000
 
 
 def logfile_loader(network_name, target, num_measure_trials, batch_size):
     network_name = network_name.replace("/", "_")
     path = (
-        "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d.json"
+        "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d_finished.json"
         % (network_name, target, num_measure_trials, batch_size)
     )
     file = glob.glob(path)
@@ -31,6 +33,9 @@ def benchmark(network_name, batch_size, target, log_file, num_measure_trials=100
     optimum.run(
         encoded_input, target, num_measure_trials=num_measure_trials, log_file=log_file
     )
+    dev = tvm.device(str(target), 0)
+    print("Evaluate inference time cost...")
+    print(optimum.ansor_engine.module.benchmark(dev, repeat=3, min_repeat_ms=500))
     optimized_model = optimum.get_best_model()
     time_res = optimized_model(encoded_input, time_evaluator=True)
     to_comp = (
@@ -80,7 +85,6 @@ if __name__ == "__main__":
     )
     os.makedirs(os.path.dirname(result_file_name), exist_ok=True)
     result_file = open(result_file_name, "w")
-    num_measure_trials = 10
     result_messages = []
     for i, network in enumerate(networks):
         for batch_size in range(
@@ -118,21 +122,3 @@ if __name__ == "__main__":
             for msg in message:
                 result_file.write(msg + "\n")
             result_messages.append(message)
-
-    # # Print result
-    # print("-----------------Original Execution--------------------------")
-    # print(
-    #     "%-18s %-12s %-20s"
-    #     % ("Network Name", "Batch size", "Mean Inference Time (std dev)")
-    # )
-    # for line in result_messages:
-    #     print(line[1])
-    # print("-------------------------------------------------------------")
-    # print("-----------------Optimized Execution--------------------------")
-    # print(
-    #     "%-18s %-12s %-20s"
-    #     % ("Network Name", "Batch size", "Mean Inference Time (std dev)")
-    # )
-    # for line in result_messages:
-    #     print(line[0])
-    # print("-------------------------------------------------------------")
