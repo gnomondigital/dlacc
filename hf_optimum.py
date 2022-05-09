@@ -34,7 +34,7 @@ class Optimum(BaseClass):
         if self.framework_type == "pt":
             if mode == "ansor":
                 jit_traced_model = get_jit_traced_model(
-                    self.origin_model, tuple(encoded_input.values())
+                    self.origin_model, tuple(encoded_input.values()), save_path="jit_traced_models/", model_name=self.network_name
                 ).eval()
                 shape_list = [
                     (i.debugName().split(".")[0], i.type().sizes())

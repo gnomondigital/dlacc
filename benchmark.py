@@ -8,9 +8,14 @@ from sklearn.datasets import fetch_20newsgroups
 import os
 import glob
 import tvm
+import pandas as pd
+
 
 texts = fetch_20newsgroups(subset="train").data
 num_measure_trials = 20000
+
+def describe(np_array):
+    return pd.DataFrame(np_array).describe()
 
 
 def logfile_loader(network_name, target, num_measure_trials, batch_size):
@@ -35,16 +40,15 @@ def benchmark(network_name, batch_size, target, log_file, num_measure_trials=100
     )
     dev = tvm.device(str(target), 0)
     print("Evaluate inference time cost...")
-    print(optimum.ansor_engine.module.benchmark(dev, repeat=3, min_repeat_ms=500))
-    optimized_model = optimum.get_best_model()
-    time_res = optimized_model(encoded_input, time_evaluator=True)
+    timing_results = optimum.ansor_engine.module.benchmark(dev, repeat=3, number=10, end_to_end=True)
     to_comp = (
         np.array(
             timeit.Timer(lambda: model(**encoded_input)).repeat(repeat=3, number=10)
         )
         / 10
-    )
-    return time_res * 1000, to_comp * 1000
+    ) 
+    print("Evaluate inference time finished...")
+    return np.array(timing_results.results) * 1000, to_comp * 1000
 
 
 if __name__ == "__main__":
@@ -101,24 +105,16 @@ if __name__ == "__main__":
                 logfile,
                 num_measure_trials=num_measure_trials,
             )
-            message = (
-                "%-18s %-12s %-19s (%s)"
-                % (
-                    network,
-                    batch_size,
-                    "%.2f ms" % np.mean(prof_res),
-                    "%.2f ms" % np.std(prof_res),
-                ),
-                "%-18s %-12s %-19s (%s)"
-                % (
-                    network,
-                    batch_size,
-                    "%.2f ms" % np.mean(to_comp_res),
-                    "%.2f ms" % np.std(to_comp_res),
-                ),
-            )
-            print("Performance Comparison:")
-            print(message)
-            for msg in message:
-                result_file.write(msg + "\n")
-            result_messages.append(message)
+            df_optimized = pd.DataFrame(prof_res).describe()
+            df_original = pd.DataFrame(to_comp_res).describe()
+            result_df = pd.concat([df_optimized,df_original], axis=1)
+            result_df.columns = ["optimized", "original"]
+            print(result_df)
+            result_file.write("network_name=%s  batch_size=%s:\n" % (network, batch_size))
+            result_file.write(str(result_df) + "\n")
+            mean_1, mean_2 = result_df.loc["mean"].values[0], result_df.loc["mean"].values[1]
+            percent = 0 if mean_1 > mean_2 else (mean_2 - mean_1) / mean_2
+            result_file.write("mean improvement = %.2f%" % (percent*100))
+            print("Results written to %s" % (result_file_name))
+            result_messages.append(result_df)
+

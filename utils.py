@@ -1,3 +1,4 @@
+from pyexpat import model
 from transformers import AutoTokenizer, AutoModel
 import torch
 from ansor_engine import AnsorEngine
@@ -5,12 +6,14 @@ from ansor_engine import AnsorEngine
 
 def get_jit_traced_model(origin_model, example_inputs, save_path=None, model_name=None):
     print("Generate jit traced model...")
+    model_name = networkname_to_path(model_name)
     jit_traced_model = torch.jit.trace(
         origin_model, example_inputs=example_inputs
     ).eval()
     if save_path:
-        torch.jit.save(jit_traced_model, "jit_traced_{model_name}.pt")
-        print("jit_traced_{model_name}.pt saved.")
+        path = save_path + "jit_traced_%s.pt" % (model_name)
+        torch.jit.save(jit_traced_model, path)
+        print("%s saved." % path)
     print("Jit traced model generation success.")
     return jit_traced_model
 
@@ -58,3 +61,6 @@ def from_hf_pretrained(network_name):
     )  # uggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks
     model = AutoModel.from_pretrained(network_name, return_dict=False)
     return tokenizer, model
+
+def networkname_to_path(network_name):
+    return network_name.replace("/", "_")

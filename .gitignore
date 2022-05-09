@@ -7,3 +7,4 @@ sar_u.txt
 benchmark/
 execution_log.txt
 tvmdbg/
+jit_traced_models/
