@@ -1,5 +1,4 @@
 __pycache__/
-tuning_log/
 .pytest_cache/
 total_latency.tsv
 sar_r.txt
@@ -7,3 +6,4 @@ sar_r.txt
 sar_u.txt
 benchmark/
 execution_log.txt
+tvmdbg/

@@ -4,13 +4,15 @@ import tvm
 from tvm import auto_scheduler
 from tvm.auto_scheduler.search_task import TuningOptions
 import tvm.relay as relay
-from tvm.contrib import graph_executor
+# from tvm.contrib import graph_executor
+from tvm.contrib.debugger import debug_executor as graph_executor
+
 from pathlib import Path
 
 import logging
 
 logging.getLogger("autotvm").setLevel(logging.DEBUG)
-
+DEBUG_MODE = True
 
 class AnsorEngine(BaseClass):
     def __init__(self, network_name, target, batch_size) -> None:
@@ -82,8 +84,11 @@ class AnsorEngine(BaseClass):
             with tvm.transform.PassContext(
                 opt_level=3, config={"relay.backend.use_auto_scheduler": True}
             ):
-                lib = relay.build(self.mod, target=self.target, params=self.params)
+                graph, lib, graph_params = relay.build(self.mod, target=self.target, params=self.params)
         self.device = tvm.device(str(self.target), 0)
-        self.module = graph_executor.GraphModule(lib["default"](self.device))
+        if DEBUG_MODE:
+            self.module = graph_executor.create(graph, lib, self.device, dump_root="./tvmdbg")
+        else:
+            self.module = graph_executor.GraphModule(lib["default"](self.device))
         self._print("Compile success.")
         return self
