@@ -35,8 +35,10 @@ nohup python3.9 dl_acceleration/benchmark.py --target "llvm -mcpu=skylake-avx512
 ```
 ['aocl', 'hybrid', 'nvptx', 'sdaccel', 'opencl', 'metal', 'hexagon', 'aocl_sw_emu', 'rocm', 'webgpu', 'llvm', 'cuda', 'vulkan', 'ext_dev', 'c']
 ```
-Notifications: 
+Specifying the correct target can have a huge impact on the performance of the compiled module, as it can take advantage of hardware features available on the target. For more information, please refer to Auto-tuning a convolutional network for x86 CPU. We recommend identifying which CPU you are running, along with optional features, and set the target appropriately. For example, for some processors target = "llvm -mcpu=skylake", or target = "llvm -mcpu=skylake-avx512" for processors with the AVX-512 vector instruction set.
 
+
+Notes: 
 
 Generally: 
 - Use 'cuda' for GPU backend;

@@ -1,34 +1,50 @@
+from black import out
 from base_object import BaseClass
 import os
 import tvm
 from tvm import auto_scheduler
 from tvm.auto_scheduler.search_task import TuningOptions
 import tvm.relay as relay
-# from tvm.contrib import graph_executor
-from tvm.contrib.debugger import debug_executor as graph_executor
+from tvm.contrib import graph_executor
+
+# from tvm.contrib.debugger import debug_executor as graph_executor
 
 from pathlib import Path
 
 import logging
 
-logging.getLogger("autotvm").setLevel(logging.DEBUG)
-DEBUG_MODE = True
+DEBUG_MODE = False
+
 
 class AnsorEngine(BaseClass):
-    def __init__(self, network_name, target, batch_size) -> None:
+    def __init__(self, network_name) -> None:
         self.network_name = network_name.replace("/", "_")
-        self.target = target
-        self.batch_size = batch_size
 
-    def ansor_call_pt(self, jit_traced_model, input_infos, default_dtype):
+    def ansor_call_pt(
+        self, jit_traced_model, input_infos, default_dtype, batch_size, target
+    ):
         mod, params = tvm.relay.frontend.from_pytorch(
             jit_traced_model, input_infos, default_dtype=default_dtype
         )
         self.mod = mod
+        self.batch_size = batch_size
+        self.target = target
         self.params = params
         return self
 
-    def ansor_run_tuning(self, num_measure_trials=500):
+    def ansor_run_tuning(
+        self,
+        jit_traced_model=None,
+        input_infos=None,
+        default_dtype=None,
+        batch_size=None,
+        target=None,
+        num_measure_trials=500,
+        output_path=".",
+    ):
+        self.ansor_call_pt(
+            jit_traced_model, input_infos, default_dtype, batch_size, target
+        )
         self._print("Run tuning for network=%s" % self.network_name)
         self.log_file = (
             "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d.json"
@@ -73,22 +89,50 @@ class AnsorEngine(BaseClass):
         p.rename(Path(p.parent, new_file_name + ext))
         self.log_file = str(p.parent) + new_file_name + ext
         self._print("Tuning Success, configuration file saved at %s" % self.log_file)
+
+        self.ansor_compile(self.log_file, output_path)
         return self
 
-    def ansor_compile(self, log_file=None):
+    def ansor_compile(self, log_file=None, output_path="./optimized_models"):
         # Compile with the history best
         if log_file:
             self.log_file = log_file
-        self._print("Compile with %s" % self.log_file)
+        self._print("Compile from %s" % self.log_file)
         with auto_scheduler.ApplyHistoryBest(self.log_file):
             with tvm.transform.PassContext(
                 opt_level=3, config={"relay.backend.use_auto_scheduler": True}
             ):
-                graph, lib, graph_params = relay.build(self.mod, target=self.target, params=self.params)
+                graph, lib, graph_params = relay.build(
+                    self.mod, target=self.target, params=self.params
+                )
+        if output_path:
+            p = output_path + "/" + self.network_name
+            os.makedirs(p, exist_ok=True)
+            self._save(p, lib, graph, graph_params)
         self.device = tvm.device(str(self.target), 0)
         if DEBUG_MODE:
-            self.module = graph_executor.create(graph, lib, self.device, dump_root="./tvmdbg")
+            self.module = graph_executor.create(
+                graph, lib, self.device, dump_root="./tvmdbg"
+            )
         else:
-            self.module = graph_executor.GraphModule(lib["default"](self.device))
+            self.module = graph_executor.create(graph, lib, self.device)
         self._print("Compile success.")
         return self
+
+    def _save(self, output_path, lib, graph, params):
+        lib.export_library(output_path + "/deploy_lib.tar")
+        with open(output_path + "/deploy_graph.json", "w") as fo:
+            fo.write(graph)
+        with open(output_path + "/deploy_param.params", "wb") as fo:
+            fo.write(relay.save_param_dict(params))
+
+    def load(self, input_path):
+        self._print("Load from %s." % input_path)
+        loaded_json = open(input_path + "deploy_graph.json").read()
+        loaded_lib = tvm.module.load(input_path + "/deploy_lib.tar")
+        loaded_params = bytearray(
+            open(input_path + "/deploy_param.params", "rb").read()
+        )
+        self.module = graph_executor.create(loaded_json, loaded_lib, self.device)
+        self.module.load_params(loaded_params)
+        self._print("Compile success.")

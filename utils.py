@@ -1,4 +1,3 @@
-from pyexpat import model
 from transformers import AutoTokenizer, AutoModel
 import torch
 from ansor_engine import AnsorEngine
@@ -27,24 +26,27 @@ def optimize_model(
     log_file=None,
     framework_type="pt",
     mode="ansor",
-    num_measure_trials=500,
+    num_measure_trials=200000,
 ):
     if framework_type == "pt":
         if mode == "ansor":
-            ae = AnsorEngine(network_name, target, batch_size)
+            ae = AnsorEngine(network_name)
             if log_file:
                 print(
                     "Historical configuration file %s found, tuning will not be executed."
                     % log_file
                 )
                 return ae.ansor_call_pt(
-                    traced_model, input_infos, "int64"
+                    traced_model, input_infos, "int32", batch_size, target
                 ).ansor_compile(log_file)
             else:
-                return (
-                    ae.ansor_call_pt(traced_model, input_infos, "int64")
-                    .ansor_run_tuning(num_measure_trials=num_measure_trials)
-                    .ansor_compile()
+                return ae.ansor_run_tuning(
+                    traced_model,
+                    input_infos,
+                    "int32",
+                    batch_size,
+                    target,
+                    num_measure_trials=num_measure_trials,
                 )
 
         if mode == "autotvm":
@@ -61,6 +63,7 @@ def from_hf_pretrained(network_name):
     )  # uggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks
     model = AutoModel.from_pretrained(network_name, return_dict=False)
     return tokenizer, model
+
 
 def networkname_to_path(network_name):
     return network_name.replace("/", "_")
