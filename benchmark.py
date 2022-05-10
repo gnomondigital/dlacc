@@ -40,10 +40,10 @@ def benchmark(network_name, batch_size, target, log_file, num_measure_trials=100
     )
     dev = tvm.device(str(target), 0)
     print("Evaluate inference time cost...")
-    timing_results = optimum.ansor_engine.module.benchmark(dev, repeat=3, number=10, end_to_end=True)
+    timing_results = optimum.ansor_engine.module.benchmark(dev, repeat=5, number=10, end_to_end=True)
     to_comp = (
         np.array(
-            timeit.Timer(lambda: model(**encoded_input)).repeat(repeat=3, number=10)
+            timeit.Timer(lambda: optimum.traced_model(**encoded_input)).repeat(repeat=5, number=10)
         )
         / 10
     ) 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             result_file.write(str(result_df) + "\n")
             mean_1, mean_2 = result_df.loc["mean"].values[0], result_df.loc["mean"].values[1]
             percent = 0 if mean_1 > mean_2 else (mean_2 - mean_1) / mean_2
-            result_file.write("mean improvement = %.2f%" % (percent*100))
+            result_file.write("mean improvement = %.2f%%" % (percent*100))
             print("Results written to %s" % (result_file_name))
             result_messages.append(result_df)
 

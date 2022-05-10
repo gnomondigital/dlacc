@@ -33,16 +33,16 @@ class Optimum(BaseClass):
     ):
         if self.framework_type == "pt":
             if mode == "ansor":
-                jit_traced_model = get_jit_traced_model(
+                self.traced_model = get_jit_traced_model(
                     self.origin_model, tuple(encoded_input.values()), save_path="jit_traced_models/", model_name=self.network_name
                 ).eval()
                 shape_list = [
                     (i.debugName().split(".")[0], i.type().sizes())
-                    for i in list(jit_traced_model.graph.inputs())[1:]
+                    for i in list(self.traced_model.graph.inputs())[1:]
                 ]
                 batch_size = shape_list[0][1][0]
                 self.ansor_engine = optimize_model(
-                    jit_traced_model,
+                    self.traced_model,
                     self.network_name,
                     shape_list,
                     target,

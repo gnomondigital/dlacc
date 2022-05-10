@@ -25,6 +25,12 @@ optimum.run(encoded_input, target)
 optimized_model = optimum.get_best_model()
 output = optimized_model(encoded_input)
 ```
+
+To run benchmark:
+```
+nohup python3.9 dl_acceleration/benchmark.py --target "llvm -mcpu=skylake-avx512" --batchsize_range 10 21 10 > execution_log.txt
+```
+
 ## Supported Target List
 ```
 ['aocl', 'hybrid', 'nvptx', 'sdaccel', 'opencl', 'metal', 'hexagon', 'aocl_sw_emu', 'rocm', 'webgpu', 'llvm', 'cuda', 'vulkan', 'ext_dev', 'c']
