@@ -127,9 +127,9 @@ class AnsorEngine(BaseClass):
             fo.write(relay.save_param_dict(params))
 
     def load(self, input_path):
-        self._print("Load from %s." % input_path)
-        loaded_json = open(input_path + "deploy_graph.json").read()
-        loaded_lib = tvm.module.load(input_path + "/deploy_lib.tar")
+        self._print("Load module from %s" % input_path)
+        loaded_json = open(input_path + "/deploy_graph.json").read()
+        loaded_lib = tvm.runtime.load_module(input_path + "/deploy_lib.tar")
         loaded_params = bytearray(
             open(input_path + "/deploy_param.params", "rb").read()
         )
