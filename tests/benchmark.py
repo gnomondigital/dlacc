@@ -9,6 +9,7 @@ import glob
 import tvm
 import pandas as pd
 from testings import get_encoded_input
+from utils import get_input_info_hf, get_traced_model
 
 num_measure_trials = 20000
 
@@ -30,11 +31,14 @@ def logfile_loader(network_name, target, num_measure_trials, batch_size):
 def benchmark(network_name, batch_size, target, log_file, num_measure_trials=1000):
     encoded_input = get_encoded_input(batch_size, network_name)
     model = AutoModel.from_pretrained(network_name, return_dict=False)
+    jit_traced_model = get_traced_model(model, encoded_input)
+    batch_size, shape_dict = get_input_info_hf(jit_traced_model)
     optimum = Optimum(network_name)
     optimum.run(
         target,
-        model,
-        encoded_input,
+        batch_size, 
+        shape_dict,
+        traced_model=jit_traced_model,
         num_measure_trials=num_measure_trials,
         log_file=log_file,
     )
@@ -71,14 +75,14 @@ if __name__ == "__main__":
     )
     # Benchmark
     networks = [
-        "sentence-transformers/all-MiniLM-L6-v2",
-        "camembert-base",
+        #"xlm-roberta-large-finetuned-conll03-english",
+        "nlptown/bert-base-multilingual-uncased-sentiment",
+        "bert-base-uncased",
+        #"camembert-base",
         "facebook/bart-base",
         "roberta-base",
         "distilgpt2",
-        "bert-base-uncased",
-        "xlm-roberta-large-finetuned-conll03-english",
-        "nlptown/bert-base-multilingual-uncased-sentiment",
+        "sentence-transformers/all-MiniLM-L6-v2",
     ]
     parser.add_argument(
         "--batchsize_range",

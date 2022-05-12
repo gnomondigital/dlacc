@@ -11,8 +11,6 @@ from tvm.contrib import graph_executor
 
 from pathlib import Path
 
-import logging
-
 DEBUG_MODE = False
 
 
@@ -20,12 +18,15 @@ class AnsorEngine(BaseClass):
     def __init__(self, network_name) -> None:
         self.network_name = network_name.replace("/", "_")
 
-    def ansor_call_pt(
-        self, jit_traced_model, input_infos, default_dtype, batch_size, target
+    def ansor_call(
+        self, traced_model, input_infos, default_dtype, batch_size, target, framework_type='pt'
     ):
-        mod, params = tvm.relay.frontend.from_pytorch(
-            jit_traced_model, input_infos, default_dtype=default_dtype
-        )
+        if framework_type == 'pt':
+            mod, params = relay.frontend.from_pytorch(
+                traced_model, input_infos, default_dtype=default_dtype
+            )
+        elif framework_type == 'onnx':
+            mod, params = relay.frontend.from_onnx(traced_model, input_infos)
         self.mod = mod
         self.batch_size = batch_size
         self.target = target
@@ -34,7 +35,7 @@ class AnsorEngine(BaseClass):
 
     def ansor_run_tuning(
         self,
-        jit_traced_model=None,
+        traced_model=None,
         input_infos=None,
         default_dtype=None,
         batch_size=None,
@@ -42,8 +43,8 @@ class AnsorEngine(BaseClass):
         num_measure_trials=500,
         output_path=".",
     ):
-        self.ansor_call_pt(
-            jit_traced_model, input_infos, default_dtype, batch_size, target
+        self.ansor_call(
+            traced_model, input_infos, default_dtype, batch_size, target
         )
         self._print("Run tuning for network=%s" % self.network_name)
         self.log_file = (
@@ -87,7 +88,7 @@ class AnsorEngine(BaseClass):
         ext = p.suffix
         new_file_name = f"{name_without_extension}_finished"
         p.rename(Path(p.parent, new_file_name + ext))
-        self.log_file = str(p.parent) + new_file_name + ext
+        self.log_file = str(p.parent) + "/" + new_file_name + ext
         self._print("Tuning Success, configuration file saved at %s" % self.log_file)
 
         self.ansor_compile(self.log_file, output_path)
