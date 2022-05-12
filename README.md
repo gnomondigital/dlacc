@@ -11,17 +11,29 @@ export TOKENIZERS_PARALLELISM=false
 # Features
 - Import HuggingFace Models
 - Automatic Optimization
-- Benchmark
+- Benchmark with various metrics (mean inference time, improvement compare, ..)
+- Output optimized models
+- Save tunning log
+- Support pytorch and onnx models, for tensorflow models, see https://github.com/onnx/tensorflow-onnx
 # Usage
 ```python
+from utils import get_traced_model, get_input_info_hf
 tokenizer, model = from_hf_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 example_batch_input = ["This is an example sentence", "Each sentence is converted"]
 encoded_input = tokenizer(
     example_batch_input, padding=True, truncation=True, return_tensors="pt"
 )
+target = "llvm -mcpu=skylake-avx512"
+jit_traced_model = get_traced_model(model, encoded_input)
+batch_size, shape_dict = get_input_info_hf(jit_traced_model)
 optimum = Optimum(network_name)
-target = "llvm"
-optimum.run(encoded_input, target)
+optimum.run(
+    target,
+    batch_size, 
+    shape_dict,
+    traced_model=jit_traced_model,
+    num_measure_trials=num_measure_trials,]
+)
 optimized_model = optimum.get_best_model()
 output = optimized_model(encoded_input)
 ```
@@ -30,6 +42,8 @@ To run benchmark:
 ```
 nohup python3.9 dl_acceleration/benchmark.py --target "llvm -mcpu=skylake-avx512" --batchsize_range 10 21 10 > execution_log.txt
 ```
+
+
 
 ## Supported Target List
 ```
