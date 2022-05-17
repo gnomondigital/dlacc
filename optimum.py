@@ -21,7 +21,12 @@ class Optimum(BaseClass):
     ):
         if mode == "ansor":
             ae = AnsorEngine(
-                self.model_name, self.onnx_model, target, input_shape, input_dtype, out_json
+                self.model_name,
+                self.onnx_model,
+                target,
+                input_shape,
+                input_dtype,
+                out_json,
             )
             if log_file != "":
                 print(
@@ -43,4 +48,3 @@ class Optimum(BaseClass):
     def load_model(self, input_path):
         self.ansor_engine.load(input_path)
         return GraphModuleWrapper(self.ansor_engine.module, self.ansor_engine.device)
-

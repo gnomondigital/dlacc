@@ -4,7 +4,7 @@ import tvm
 from tvm import auto_scheduler
 import tvm.relay as relay
 from tvm.contrib import graph_executor
-from metadata import output_prefix
+from metadata import output_prefix, input_prefix
 import numpy as np
 import timeit
 import onnxruntime as ort
@@ -129,9 +129,16 @@ class AnsorEngine(BaseClass):
 
     def evaluate(self):
         self._print("Evaluate inference time cost...")
-        timing_results = self.module.benchmark(self.device, repeat=5, number=10, end_to_end=True)
-        dummy_input = dict([(k, np.random.rand(v).astype(self.input_dtype[k])) for k, v in self.input_shape])
-        ort_sess = ort.InferenceSession('fashion_mnist_model.onnx')
+        timing_results = self.module.benchmark(
+            self.device, repeat=5, number=10, end_to_end=True
+        )
+        dummy_input = dict(
+            [
+                (k, np.random.rand(*v).astype(self.input_dtype[k]))
+                for k, v in self.input_shape.items()
+            ]
+        )
+        ort_sess = ort.InferenceSession(input_prefix + "/model.onnx")
         to_comp = (
             np.array(
                 timeit.Timer(lambda: ort_sess.run(None, dummy_input)).repeat(
@@ -140,9 +147,10 @@ class AnsorEngine(BaseClass):
             )
             / 10
         )
-        prof_res, to_comp_res = np.array(timing_results.results) * 1000, to_comp * 1000
+        prof_res = np.array(timing_results.results) * 1000
+        to_comp_res = to_comp * 1000
         df_optimized = pd.DataFrame(prof_res).describe()
         df_original = pd.DataFrame(to_comp_res).describe()
         result_df = pd.concat([df_optimized, df_original], axis=1)
-        result_df.columns = ["optimized", "original"]   
-        result_df.to_csv(output_prefix)
+        result_df.columns = ["optimized", "original"]
+        result_df.to_csv(output_prefix + "/inference_time.csv")

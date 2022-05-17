@@ -1,0 +1,28 @@
+{
+    "job_id": "100003",
+    "status": 0,
+    "model_name" : "sentence-transformers_all-MiniLM-L6-v2",
+    "source_value": "/home/mac_yuan/repo/dl_acceleration/inputs/model.onnx",
+    "source_type": 0,
+    "model_type" : 2,
+    "target": "llvm -mcpu cascadelake -num-cores 8",
+    "model_config":{
+        "input_shape":{
+            "input_ids": [10, 512], 
+            "attention_mask": [10, 512],
+            "token_type_ids": [10, 512]
+        },
+        "input_dtype":{
+            "input_ids": "int64",
+            "attention_mask": "int64",
+            "token_type_ids": "int64"
+        }
+    },
+    "tuning_config": {
+        "mode": "ansor",
+        "num_measure_trials": 10
+    },
+    "history":{
+        "tunned_log":"/home/mac_yuan/repo/dl_acceleration/outputs/tuninglog_network_name=sentence-transformers_all-MiniLM-L6-v2--target=llvm -mcpu cascadelake -num-cores 8_finished.json"
+    }
+}

@@ -1,6 +1,5 @@
 from transformers import AutoTokenizer, AutoModel
 import torch
-from ansor_engine import AnsorEngine
 from metadata import ModelType, SourceType, input_prefix, output_prefix
 from pathlib import Path
 import os
@@ -31,6 +30,7 @@ def get_input_info_hf(traced_model):
     batch_size = shape_list[0][1][0]
     return batch_size, shape_list
 
+
 def from_hf_pretrained(network_name):
     tokenizer = AutoTokenizer.from_pretrained(
         network_name, TOKENIZERS_PARALLELISM=False
@@ -39,8 +39,8 @@ def from_hf_pretrained(network_name):
     return tokenizer, model
 
 
-def source_type_infer(source_value: str):
-    if source_value.startswith("gs://"):
+def plateform_type_infer(model_path: str):
+    if model_path.startswith("gs://"):
         return SourceType.GOOGLESTORAGE
     else:
         return SourceType.LOCAL
@@ -58,18 +58,17 @@ def download_from_gcp(url, folder, rename: str):
     return folder + "/" + rename
 
 
-def upload(url, source_type):
-    if source_type == SourceType.GOOGLESTORAGE:
+def upload(url, plateform_type):
+    if plateform_type == SourceType.GOOGLESTORAGE:
         os.system("gsutil -m cp -r %s %s" % (output_prefix, url))
 
 
-def convert2onnx(source_type, source_value, model_type):
-
+def convert2onnx(plateform_type, model_path, model_type):
     file_path = None
-    if source_type == int(SourceType.LOCAL):
-        file_path = source_value
-    elif source_type == int(SourceType.GOOGLESTORAGE):
-        file_path = download_from_gcp(source_value)
+    if plateform_type == int(SourceType.LOCAL):
+        file_path = model_path
+    elif plateform_type == int(SourceType.GOOGLESTORAGE):
+        file_path = download_from_gcp(model_path)
     else:
         raise NotImplementedError
 
@@ -78,6 +77,7 @@ def convert2onnx(source_type, source_value, model_type):
         model = None
         if model_type == int(ModelType.ONNX):
             import onnx
+
             model = onnx.load(input_prefix + "/model.onnx")
         elif model_type == int(ModelType.PT):
             raise NotImplementedError
@@ -90,14 +90,14 @@ def convert2onnx(source_type, source_value, model_type):
 
 
 class JSONConfig(BaseClass):
-    def __init__(self, source_value, source_type) -> None:
-        self.load(source_value, source_type)
+    def __init__(self, model_path, plateform_type) -> None:
+        self.load(model_path, plateform_type)
 
-    def load(self, source_value, source_type):
-        path = input_prefix + source_value
-        if source_type == SourceType.GOOGLESTORAGE:
-            path = download_from_gcp(source_value, input_prefix, "model.onnx")
-        elif source_type == SourceType.AWSSTORAGE:
+    def load(self, model_path, plateform_type):
+        path = input_prefix + model_path
+        if plateform_type == SourceType.GOOGLESTORAGE:
+            path = download_from_gcp(model_path, input_prefix, "model.onnx")
+        elif plateform_type == SourceType.AWSSTORAGE:
             raise NotImplementedError
         with open(path) as json_file:
             self.meta = json.load(json_file)

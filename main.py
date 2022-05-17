@@ -2,7 +2,7 @@ from utils import JSONConfig, JSONOutput
 import argparse
 
 from optimum import Optimum
-from utils import convert2onnx, source_type_infer, upload
+from utils import convert2onnx, plateform_type_infer, upload
 from metadata import SourceType, output_prefix
 from pathlib import Path
 
@@ -15,8 +15,10 @@ if __name__ == "__main__":
         required=True,
     )
     args = parser.parse_args()
-    config = JSONConfig("/" + args.config, source_type_infer(args.config))
-    onnx_model, input_shape = convert2onnx(config["source_type"], config["source_value"], config["model_type"])
+    config = JSONConfig("/" + args.config, plateform_type_infer(args.config))
+    onnx_model, input_shape = convert2onnx(
+        config["plateform_type"], config["model_path"], config["model_type"]
+    )
     Path(output_prefix).mkdir(exist_ok=True)
     out_json = JSONOutput(config)
     out_json["status"] = 1
@@ -29,14 +31,14 @@ if __name__ == "__main__":
             out_json,
             log_file=config["history"]["tunned_log"],
             input_shape=config["model_config"]["input_shape"],
-            input_dtype=config["model_config"]["input_dtype"]
+            input_dtype=config["model_config"]["input_dtype"],
         )
     except Exception as e:
         print(e)
         out_json["error_info"] = str(e)
-        out_json["status"] = 5
-    
-    if out_json["status"] != 5:
+        out_json["status"] = -1
+
+    if out_json["status"] != -1:
         out_json["status"] = 4
     out_json.save(output_prefix + "/output_json.json")
     optimum.ansor_engine.evaluate()
@@ -44,7 +46,5 @@ if __name__ == "__main__":
     upload(
         "gs://gnomondigital-sdx-tvm-turning-job-output/"
         + "job_id=%s" % out_json["job_id"],
-        SourceType.GOOGLESTORAGE
+        SourceType.GOOGLESTORAGE,
     )
-
-
