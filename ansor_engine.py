@@ -1,56 +1,46 @@
-from black import out
-from base_object import BaseClass
+from base_class import BaseClass
 import os
 import tvm
 from tvm import auto_scheduler
-from tvm.auto_scheduler.search_task import TuningOptions
 import tvm.relay as relay
 from tvm.contrib import graph_executor
+from metadata import output_prefix
+import numpy as np
+import timeit
+import onnxruntime as ort
+import pandas as pd
 
 # from tvm.contrib.debugger import debug_executor as graph_executor
-
 from pathlib import Path
 
 DEBUG_MODE = False
 
 
 class AnsorEngine(BaseClass):
-    def __init__(self, network_name) -> None:
+    def __init__(
+        self, network_name, traced_model, target, input_shape, input_dtype, out_json
+    ) -> None:
         self.network_name = network_name.replace("/", "_")
-
-    def ansor_call(
-        self, traced_model, input_infos, default_dtype, batch_size, target, framework_type='pt'
-    ):
-        if framework_type == 'pt':
-            mod, params = relay.frontend.from_pytorch(
-                traced_model, input_infos, default_dtype=default_dtype
-            )
-        elif framework_type == 'onnx':
-            mod, params = relay.frontend.from_onnx(traced_model, input_infos)
+        mod, params = relay.frontend.from_onnx(traced_model, shape=input_shape)
         self.mod = mod
-        self.batch_size = batch_size
-        self.target = target
         self.params = params
-        return self
+        self.out_json = out_json
+        self.target = target
+        self.input_shape = input_shape
+        self.input_dtype = input_dtype
+        self.onnx_model = traced_model
 
     def ansor_run_tuning(
         self,
-        traced_model=None,
-        input_infos=None,
-        default_dtype=None,
-        batch_size=None,
-        target=None,
         num_measure_trials=500,
-        output_path=".",
     ):
-        self.ansor_call(
-            traced_model, input_infos, default_dtype, batch_size, target
-        )
         self._print("Run tuning for network=%s" % self.network_name)
-        self.log_file = (
-            "./tuning_log/network_name=%s--target=%s--num_measure_trials=%d--batch_size=%d.json"
-            % (self.network_name, str(self.target), num_measure_trials, self.batch_size)
+
+        self.log_file = output_prefix + (
+            "/tuninglog_network_name=%s--target=%s.json"
+            % (self.network_name, str(self.target))
         )
+
         self._print("Extract tasks...")
         tasks, task_weights = auto_scheduler.extract_tasks(
             self.mod["main"], self.params, self.target
@@ -90,12 +80,12 @@ class AnsorEngine(BaseClass):
         p.rename(Path(p.parent, new_file_name + ext))
         self.log_file = str(p.parent) + "/" + new_file_name + ext
         self._print("Tuning Success, configuration file saved at %s" % self.log_file)
-
-        self.ansor_compile(self.log_file, output_path)
+        self.out_json["status"] = 2
+        self.ansor_compile(self.log_file)
         return self
 
-    def ansor_compile(self, log_file=None, output_path="./optimized_models"):
-        # Compile with the history best
+    def ansor_compile(self, log_file=None):
+        output_path = output_prefix + "/optimized_model"
         if log_file:
             self.log_file = log_file
         self._print("Compile from %s" % self.log_file)
@@ -106,10 +96,8 @@ class AnsorEngine(BaseClass):
                 graph, lib, graph_params = relay.build(
                     self.mod, target=self.target, params=self.params
                 )
-        if output_path:
-            p = output_path + "/" + self.network_name
-            os.makedirs(p, exist_ok=True)
-            self._save(p, lib, graph, graph_params)
+        Path(output_path).mkdir(parents=True, exist_ok=True)
+        self._save(output_path, lib, graph, graph_params)
         self.device = tvm.device(str(self.target), 0)
         if DEBUG_MODE:
             self.module = graph_executor.create(
@@ -118,6 +106,7 @@ class AnsorEngine(BaseClass):
         else:
             self.module = graph_executor.create(graph, lib, self.device)
         self._print("Compile success.")
+        self.out_json["status"] = 3
         return self
 
     def _save(self, output_path, lib, graph, params):
@@ -137,3 +126,23 @@ class AnsorEngine(BaseClass):
         self.module = graph_executor.create(loaded_json, loaded_lib, self.device)
         self.module.load_params(loaded_params)
         self._print("Compile success.")
+
+    def evaluate(self):
+        self._print("Evaluate inference time cost...")
+        timing_results = self.module.benchmark(self.device, repeat=5, number=10, end_to_end=True)
+        dummy_input = dict([(k, np.random.rand(v).astype(self.input_dtype[k])) for k, v in self.input_shape])
+        ort_sess = ort.InferenceSession('fashion_mnist_model.onnx')
+        to_comp = (
+            np.array(
+                timeit.Timer(lambda: ort_sess.run(None, dummy_input)).repeat(
+                    repeat=5, number=10
+                )
+            )
+            / 10
+        )
+        prof_res, to_comp_res = np.array(timing_results.results) * 1000, to_comp * 1000
+        df_optimized = pd.DataFrame(prof_res).describe()
+        df_original = pd.DataFrame(to_comp_res).describe()
+        result_df = pd.concat([df_optimized, df_original], axis=1)
+        result_df.columns = ["optimized", "original"]   
+        result_df.to_csv(output_prefix)

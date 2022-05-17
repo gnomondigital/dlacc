@@ -13,7 +13,7 @@ export TOKENIZERS_PARALLELISM=false
 - Automatic Optimization
 - Benchmark with various metrics (mean inference time, improvement compare, ..)
 - Output optimized models
-- Save tunning log
+- Save tuning log
 - Support pytorch and onnx models, for tensorflow models, see https://github.com/onnx/tensorflow-onnx
 # Usage
 ```python
@@ -25,12 +25,12 @@ encoded_input = tokenizer(
 )
 target = "llvm -mcpu=skylake-avx512"
 jit_traced_model = get_traced_model(model, encoded_input)
-batch_size, shape_dict = get_input_info_hf(jit_traced_model)
+batch_size, input_shape = get_input_info_hf(jit_traced_model)
 optimum = Optimum(network_name)
 optimum.run(
     target,
     batch_size, 
-    shape_dict,
+    input_shape,
     traced_model=jit_traced_model,
     num_measure_trials=num_measure_trials,]
 )
@@ -58,4 +58,4 @@ Generally:
 - Use 'cuda' for GPU backend;
 - Use 'llvm' for CPU backend.
 
-specify num_measure_trials=20000 for best performance tunning for optimum.run() method call.
+specify num_measure_trials=20000 for best performance tuning for optimum.run() method call.

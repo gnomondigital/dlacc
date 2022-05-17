@@ -9,7 +9,7 @@ class BaseClass:
             content = ", ".join("%s: %s" % item for item in attrs.items())
         return content
 
-    def raise_default_error(self, content=''):
+    def raise_default_error(self, content=""):
         raise RuntimeError(content + "\n" + self.dump_object())
 
     def _print(self, content):
