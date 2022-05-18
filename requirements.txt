@@ -1,3 +1,8 @@
 transformers
-pytorch
-tvm
+torch
+onnx
+onnxruntime
+pandas
+tornado 
+xgboost 
+cloudpickle

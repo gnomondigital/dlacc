@@ -9,13 +9,15 @@ from pathlib import Path
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config",
+        "--path",
         type=str,
         help="The path of config file in json format.",
         required=True,
     )
+
     args = parser.parse_args()
-    config = JSONConfig("/" + args.config, plateform_type_infer(args.config))
+
+    config = JSONConfig(args.path, plateform_type_infer(args.path))
     onnx_model, input_shape = convert2onnx(
         config["plateform_type"], config["model_path"], config["model_type"]
     )

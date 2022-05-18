@@ -61,6 +61,8 @@ def download_from_gcp(url, folder, rename: str):
 def upload(url, plateform_type):
     if plateform_type == SourceType.GOOGLESTORAGE:
         os.system("gsutil -m cp -r %s %s" % (output_prefix, url))
+        with open("success", "w") as flag_file:
+            os.system("gsutil cp %s %s" % (flag_file, url))
 
 
 def convert2onnx(plateform_type, model_path, model_type):
@@ -90,13 +92,13 @@ def convert2onnx(plateform_type, model_path, model_type):
 
 
 class JSONConfig(BaseClass):
-    def __init__(self, model_path, plateform_type) -> None:
-        self.load(model_path, plateform_type)
+    def __init__(self, json_path, plateform_type) -> None:
+        self.load(json_path, plateform_type)
 
-    def load(self, model_path, plateform_type):
-        path = input_prefix + model_path
+    def load(self, json_path, plateform_type):
+        path = input_prefix + "/" + json_path
         if plateform_type == SourceType.GOOGLESTORAGE:
-            path = download_from_gcp(model_path, input_prefix, "model.onnx")
+            path = download_from_gcp(json_path, input_prefix, "config.json")
         elif plateform_type == SourceType.AWSSTORAGE:
             raise NotImplementedError
         with open(path) as json_file:
