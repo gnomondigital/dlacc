@@ -3,8 +3,8 @@ FROM python:3.8-bullseye
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/Los_Angeles
 # Install deps
-RUN apt update && apt install -y --no-install-recommends git libgtest-dev cmake wget unzip libtinfo-dev libz-dev \
-     libcurl4-openssl-dev g++ sudo python3-dev antlr4 && \
+RUN apt-get update && apt install -y --no-install-recommends git libgtest-dev cmake wget unzip libtinfo-dev libz-dev \
+     libcurl4-openssl-dev g++ sudo python3-dev antlr4 ninja-build google-cloud-cli&& \
      pip install --upgrade pip && pip install pylint==1.9.4 six numpy pytest cython decorator scipy tornado \
      typed-ast pytest mypy orderedset antlr4-python3-runtime attrs requests "Pillow<7" packaging psutil xgboost cloudpickle
 

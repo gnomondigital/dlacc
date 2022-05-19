@@ -4,5 +4,5 @@ onnx
 onnxruntime
 pandas
 tornado 
-xgboost 
+xgboost==1.5.2 
 cloudpickle
