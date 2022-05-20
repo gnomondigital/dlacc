@@ -2,7 +2,7 @@ from utils import JSONConfig, JSONOutput
 import argparse
 
 from optimum import Optimum
-from utils import convert2onnx, plateform_type_infer, upload
+from utils import convert2onnx, plateform_type_infer, upload_outputs
 from metadata import SourceType, output_prefix
 from pathlib import Path
 
@@ -45,8 +45,8 @@ if __name__ == "__main__":
     out_json.save(output_prefix + "/output_json.json")
     optimum.ansor_engine.evaluate()
 
-    upload(
-        "gs://gnomondigital-sdx-tvm-turning-job-output/"
-        + "job_id=%s" % out_json["job_id"],
+    upload_outputs(
+        config["output_bucket"],
+        "job_id=%s" % config["job_id"],
         SourceType.GOOGLESTORAGE,
     )

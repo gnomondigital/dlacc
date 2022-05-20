@@ -1,15 +1,15 @@
 from transformers import AutoTokenizer, AutoModel
+from google.cloud import storage
 import torch
 from metadata import ModelType, SourceType, input_prefix, output_prefix
 from pathlib import Path
 import os
 from base_class import BaseClass
 import json
+import re
+import glob
 
-
-def get_traced_model(
-    origin_model, example_inputs, save_path=None, model_name="default_network_name"
-):
+def get_traced_model(origin_model, example_inputs, save_path=None, model_name="default_network_name"):
     print("Generate jit traced model...")
     example_inputs = tuple(example_inputs.values())
     model_name = networkname_to_path(model_name)
@@ -49,28 +49,87 @@ def plateform_type_infer(model_path: str):
 def networkname_to_path(network_name):
     return network_name.replace("/", "_")
 
+def get_bucket_object_name(url: str):
+    matches = re.match("gs://(.*?)/(.*)", url)
+    if matches:
+        bucket, object_name = matches.groups()
+    else: 
+        raise Exception('invalid url pattern')
+    return bucket, object_name
 
-def download_from_gcp(url, folder, rename: str):
-    output_dir = Path(folder)
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    # The ID of your GCS bucket
+    # bucket_name = "your-bucket-name"
+    # The ID of your GCS object
+    # source_blob_name = "storage-object-name"
+    # The path to which the file should be downloaded
+    # destination_file_name = "local/path/to/file"
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+    print("Downloaded storage object {} from bucket {} to local file {}.".format(source_blob_name, bucket_name, destination_file_name))
+
+def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the bucket."""
+    # The ID of your GCS bucket
+    # bucket_name = "your-bucket-name"
+    # The path to your file to upload
+    # source_file_name = "local/path/to/file"
+    # The ID of your GCS object
+    # destination_blob_name = "storage-object-name"
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_string(contents)
+    print(f"{destination_blob_name} with contents {contents} has been uploaded to {bucket_name}.")
+
+def upload_blobs_from_directory(directory_path: str, dest_bucket_name: str, dest_blob_name: str):
+    storage_client = storage.Client()
+    rel_paths = glob.glob(directory_path + '/**', recursive=True)
+    bucket = storage_client.bucket(dest_bucket_name)
+    for local_file in rel_paths:
+        remote_path = f'{dest_blob_name}/{"/".join(local_file.split(os.sep)[2:])}'
+        if os.path.isfile(local_file):
+            blob = bucket.blob(remote_path)
+            blob.upload_from_filename(local_file)
+    
+    print(f"Folder: {directory_path} has been uploaded to {dest_bucket_name}/{dest_blob_name}.")
+
+def download_from_gcp(url, dst_folder, dst_name: str):
+    output_dir = Path(dst_folder)
     output_dir.mkdir(parents=True, exist_ok=True)
-    url_path = Path(url)
-    os.system("gsutil -m cp %s %s" % (url, folder))
-    return folder + "/" + rename
+    bucket_name, blob_name = get_bucket_object_name(url)
+    destination_file_name = f"{dst_folder}/{dst_name}"
+    download_blob(bucket_name, blob_name, destination_file_name)
+    
+    return destination_file_name
 
 
-def upload(url, plateform_type):
+def upload_outputs(bucket_name, blob_name, plateform_type):
     if plateform_type == SourceType.GOOGLESTORAGE:
-        os.system("gsutil -m cp -r %s %s" % (output_prefix, url))
-        with open("success", "w") as flag_file:
-            os.system("gsutil cp %s %s" % (flag_file, url))
+        upload_blobs_from_directory(output_prefix, bucket_name, blob_name)
+        upload_blob_from_memory(bucket_name, "OK", f"{blob_name}/success")
+    else:
+        raise NotImplementedError
 
 
-def convert2onnx(plateform_type, model_path, model_type):
+def convert2onnx(plateform_type, model_path: str, model_type):
     file_path = None
     if plateform_type == int(SourceType.LOCAL):
         file_path = model_path
     elif plateform_type == int(SourceType.GOOGLESTORAGE):
-        file_path = download_from_gcp(model_path)
+        file_path = download_from_gcp(model_path, input_prefix, model_path.split("/")[-1])
     else:
         raise NotImplementedError
 
