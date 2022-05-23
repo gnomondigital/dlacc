@@ -6,3 +6,4 @@ pandas
 tornado 
 xgboost==1.5.2 
 cloudpickle
+google-cloud-storage
