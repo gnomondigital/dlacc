@@ -1,5 +1,4 @@
 from transformers import AutoTokenizer, AutoModel
-import torch
 from metadata import ModelType, SourceType, input_prefix, output_prefix
 from pathlib import Path
 import os
@@ -10,6 +9,8 @@ import json
 def get_traced_model(
     origin_model, example_inputs, save_path=None, model_name="default_network_name"
 ):
+    import torch
+
     print("Generate jit traced model...")
     example_inputs = tuple(example_inputs.values())
     model_name = networkname_to_path(model_name)
@@ -20,6 +21,7 @@ def get_traced_model(
         print("%s saved." % path)
     print("Jit traced model generation success.")
     return traced_model
+
 
 
 def get_input_info_hf(traced_model):
@@ -73,15 +75,15 @@ def convert2onnx(plateform_type, model_path, model_type):
         file_path = download_from_gcp(model_path)
     else:
         raise NotImplementedError
-
     if file_path:
         input_shape = {}
         model = None
         if model_type == int(ModelType.ONNX):
             import onnx
-
             model = onnx.load(input_prefix + "/model.onnx")
         elif model_type == int(ModelType.PT):
+            import torch 
+
             raise NotImplementedError
         elif model_type == ModelType.TF:
             raise NotImplementedError
