@@ -55,7 +55,6 @@ def plateform_type_infer(model_path: str):
 def networkname_to_path(network_name):
     return network_name.replace("/", "_")
 
-
 def get_bucket_object_name(url: str):
     matches = re.match("gs://(.*?)/(.*)", url)
     if matches:
@@ -99,7 +98,6 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(source_file_name)
     print(f"File {source_file_name} uploaded to {destination_blob_name}.")
-
 
 def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
     storage_client = storage.Client()
