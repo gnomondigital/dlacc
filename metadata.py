@@ -2,7 +2,7 @@ from genericpath import exists
 import enum
 
 
-class SourceType(enum.IntEnum):
+class PlateformType(enum.IntEnum):
     LOCAL = 0
     GOOGLESTORAGE = 1
     AWSSTORAGE = 2
@@ -12,6 +12,7 @@ class ModelType(enum.IntEnum):
     PT = 0
     TF = 1
     ONNX = 2
+    KERAS = 3
 
 
 input_prefix = "./inputs"

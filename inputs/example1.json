@@ -3,7 +3,8 @@
     "status": 0,
     "model_name" : "sentence-transformers_all-MiniLM-L6-v2",
     "model_path": "/home/mac_yuan/repo/dl_acceleration/inputs/model.onnx",
-    "plateform_type": 0,
+    "output_bucket": "gnomondigital-sdx-tvm-turning-job-output",
+    "platform_type": 0,
     "model_type" : 2,
     "target": "llvm -mcpu cascadelake",
     "model_config":{
@@ -22,7 +23,8 @@
         "mode": "ansor",
         "num_measure_trials": 10
     },
-    "history":{
-        "tunned_log":""
-    }
+    
+    "tuned_log":"",
+    "need_benchmark" : true
+    
 }

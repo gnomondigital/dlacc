@@ -1,0 +1,30 @@
+{
+    "job_id": "100003",
+    "status": 0,
+    "model_name" : "ease",
+    "model_path": "/home/mac_yuan/repo/RecSys_PyTorch/saves/EASE.pt",
+    "output_bucket": "gnomondigital-sdx-tvm-turning-job-output",
+    "platform_type": 0,
+    "model_type" : 0,
+    "target": "llvm -mcpu cascadelake",
+    "model_config":{
+        "input_shape":{
+            "input_ids": [10, 512], 
+            "attention_mask": [10, 512],
+            "token_type_ids": [10, 512]
+        },
+        "input_dtype":{
+            "input_ids": "int64",
+            "attention_mask": "int64",
+            "token_type_ids": "int64"
+        }
+    },
+    "tuning_config": {
+        "mode": "ansor",
+        "num_measure_trials": 10
+    },
+    
+    "tuned_log":"",
+    "need_benchmark" : true
+    
+}

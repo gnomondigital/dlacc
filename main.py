@@ -2,8 +2,8 @@ from utils import JSONConfig, JSONOutput
 import argparse
 
 from optimum import Optimum
-from utils import convert2onnx, plateform_type_infer, upload
-from metadata import SourceType, output_prefix
+from utils import convert2onnx, platform_type_infer, upload_outputs
+from metadata import PlateformType, output_prefix
 from pathlib import Path
 
 if __name__ == "__main__":
@@ -17,9 +17,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = JSONConfig(args.path, plateform_type_infer(args.path))
-    onnx_model, input_shape = convert2onnx(
-        config["plateform_type"], config["model_path"], config["model_type"]
+    config = JSONConfig(args.path, platform_type_infer(args.path))
+    onnx_model = convert2onnx(
+        config["platform_type"], config["model_path"], config["model_type"],       
+        input_shape=config["model_config"]["input_shape"],
+        input_dtype=config["model_config"]["input_dtype"]
     )
     Path(output_prefix).mkdir(exist_ok=True)
     out_json = JSONOutput(config)
@@ -31,7 +33,7 @@ if __name__ == "__main__":
             config["tuning_config"]["num_measure_trials"],
             config["tuning_config"]["mode"],
             out_json,
-            log_file=config["history"]["tunned_log"],
+            log_file=config["tuned_log"],
             input_shape=config["model_config"]["input_shape"],
             input_dtype=config["model_config"]["input_dtype"],
         )
@@ -43,10 +45,11 @@ if __name__ == "__main__":
     if out_json["status"] != -1:
         out_json["status"] = 4
     out_json.save(output_prefix + "/output_json.json")
-    optimum.ansor_engine.evaluate()
+    if config["need_benchmark"]:
+        optimum.ansor_engine.evaluate()
 
-    upload(
-        "gs://gnomondigital-sdx-tvm-turning-job-output/"
-        + "job_id=%s" % out_json["job_id"],
-        SourceType.GOOGLESTORAGE,
+    upload_outputs(
+        config["output_bucket"],
+        "job_id=%s" % config["job_id"],
+        PlateformType.GOOGLESTORAGE,
     )
