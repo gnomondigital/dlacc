@@ -1,5 +1,5 @@
-# from google.cloud import storage
-from metadata import ModelType, PlateformType, input_prefix, output_prefix
+from google.cloud import storage
+from metadata import ModelType, platformType, input_prefix, output_prefix
 from pathlib import Path
 import os
 from base_class import BaseClass
@@ -14,6 +14,7 @@ def get_traced_model(
     origin_model, example_inputs, save_path=None, model_name="default_network_name"
 ):
     import torch
+
     print("Generate jit traced model...")
     example_inputs = tuple(example_inputs.values())
     model_name = networkname_to_path(model_name)
@@ -45,15 +46,16 @@ def from_hf_pretrained(network_name):
     return tokenizer, model
 
 
-def plateform_type_infer(model_path: str):
+def infer_platform_type(model_path: str):
     if model_path.startswith("gs://"):
-        return PlateformType.GOOGLESTORAGE
+        return platformType.GOOGLESTORAGE
     else:
-        return PlateformType.LOCAL
+        return platformType.LOCAL
 
 
 def networkname_to_path(network_name):
     return network_name.replace("/", "_")
+
 
 def get_bucket_object_name(url: str):
     matches = re.match("gs://(.*?)/(.*)", url)
@@ -99,6 +101,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     blob.upload_from_filename(source_file_name)
     print(f"File {source_file_name} uploaded to {destination_blob_name}.")
 
+
 def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
@@ -136,8 +139,8 @@ def download_from_gcp(url, dst_folder, dst_name: str):
     return destination_file_name
 
 
-def upload_outputs(bucket_name, blob_name, plateform_type):
-    if plateform_type == PlateformType.GOOGLESTORAGE:
+def upload_outputs(bucket_name, blob_name, platform_type):
+    if platform_type == platformType.GOOGLESTORAGE:
         upload_blobs_from_directory(output_prefix, bucket_name, blob_name)
         upload_blob_from_memory(bucket_name, "OK", f"{blob_name}/success")
     else:
@@ -146,6 +149,7 @@ def upload_outputs(bucket_name, blob_name, plateform_type):
 
 def contruct_dummy_input(input_shape, input_dtype, tensor_type, device="cuda"):
     import numpy as np
+
     if tensor_type == "pt":
         import torch
 
@@ -188,17 +192,16 @@ def contruct_dummy_input(input_shape, input_dtype, tensor_type, device="cuda"):
     return dummy_input
 
 
-def convert2onnx(plateform_type, model_path, model_type, input_shape, input_dtype):
+def convert2onnx(platform_type, model_path, model_type, input_shape, input_dtype):
     file_path = None
-    if plateform_type == int(PlateformType.LOCAL):
+    if platform_type == int(platformType.LOCAL):
         file_path = model_path
-    elif plateform_type == int(PlateformType.GOOGLESTORAGE):
+    elif platform_type == int(platformType.GOOGLESTORAGE):
         file_path = download_from_gcp(
             model_path, input_prefix, model_path.split("/")[-1]
         )
     else:
         raise NotImplementedError
-    onnx_path = input_prefix + "/model.onnx"
     if file_path:
         model = None
         onnx_model = None
@@ -220,18 +223,20 @@ def convert2onnx(plateform_type, model_path, model_type, input_shape, input_dtyp
         elif model_type == int(ModelType.ONNX):
             pass
     if not onnx_model:
-        onnx_model = onnx.load(onnx_path)
+        onnx_model = onnx.load(file_path)
+        os.system("cp %s inputs/model.onnx" % file_path)
     return onnx_model
 
-class JSONConfig(BaseClass):
-    def __init__(self, json_path, plateform_type) -> None:
-        self.load(json_path, plateform_type)
 
-    def load(self, json_path, plateform_type):
+class JSONConfig(BaseClass):
+    def __init__(self, json_path, platform_type) -> None:
+        self.load(json_path, platform_type)
+
+    def load(self, json_path, platform_type):
         path = input_prefix + "/" + json_path
-        if plateform_type == PlateformType.GOOGLESTORAGE:
+        if platform_type == platformType.GOOGLESTORAGE:
             path = download_from_gcp(json_path, input_prefix, "config.json")
-        elif plateform_type == PlateformType.AWSSTORAGE:
+        elif platform_type == platformType.AWSSTORAGE:
             raise NotImplementedError
         with open(path) as json_file:
             self.meta = json.load(json_file)

@@ -1,9 +1,10 @@
+import traceback
 from utils import JSONConfig, JSONOutput
 import argparse
 
 from optimum import Optimum
-from utils import convert2onnx, platform_type_infer, upload_outputs
-from metadata import PlateformType, output_prefix
+from utils import convert2onnx, upload_outputs, infer_platform_type
+from metadata import platformType, output_prefix
 from pathlib import Path
 
 if __name__ == "__main__":
@@ -17,11 +18,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = JSONConfig(args.path, platform_type_infer(args.path))
+    config = JSONConfig(args.path, infer_platform_type(args.path))
     onnx_model = convert2onnx(
-        config["platform_type"], config["model_path"], config["model_type"],       
+        config["platform_type"],
+        config["model_path"],
+        config["model_type"],
         input_shape=config["model_config"]["input_shape"],
-        input_dtype=config["model_config"]["input_dtype"]
+        input_dtype=config["model_config"]["input_dtype"],
     )
     Path(output_prefix).mkdir(exist_ok=True)
     out_json = JSONOutput(config)
@@ -38,7 +41,7 @@ if __name__ == "__main__":
             input_dtype=config["model_config"]["input_dtype"],
         )
     except Exception as e:
-        print(e)
+        traceback.print_exc()
         out_json["error_info"] = str(e)
         out_json["status"] = -1
 
@@ -51,5 +54,5 @@ if __name__ == "__main__":
     upload_outputs(
         config["output_bucket"],
         "job_id=%s" % config["job_id"],
-        PlateformType.GOOGLESTORAGE,
+        platformType.GOOGLESTORAGE,
     )

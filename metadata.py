@@ -2,7 +2,7 @@ from genericpath import exists
 import enum
 
 
-class PlateformType(enum.IntEnum):
+class platformType(enum.IntEnum):
     LOCAL = 0
     GOOGLESTORAGE = 1
     AWSSTORAGE = 2

@@ -21,7 +21,9 @@ class AnsorEngine(BaseClass):
         self, network_name, traced_model, target, input_shape, input_dtype, out_json
     ) -> None:
         self.network_name = network_name.replace("/", "_")
-        mod, params = relay.frontend.from_onnx(traced_model, shape=input_shape)
+        mod, params = relay.frontend.from_onnx(
+            traced_model, shape=input_shape, dtype=input_dtype
+        )
         self.mod = mod
         self.params = params
         self.out_json = out_json

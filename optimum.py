@@ -1,6 +1,7 @@
 from ansor_engine import AnsorEngine
 from base_class import BaseClass
 from graph_module import GraphModuleWrapper
+from utils import infer_platform_type, platformType, download_from_gcp, input_prefix
 
 
 class Optimum(BaseClass):
@@ -46,5 +47,8 @@ class Optimum(BaseClass):
         return GraphModuleWrapper(self.onnx_model, self.ansor_engine.device)
 
     def load_model(self, input_path):
+        platform_type = infer_platform_type(input_path)
+        if platform_type == platformType.GOOGLESTORAGE:
+            path = download_from_gcp(input_path, input_prefix, "config.json")
         self.ansor_engine.load(input_path)
         return GraphModuleWrapper(self.ansor_engine.module, self.ansor_engine.device)
