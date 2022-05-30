@@ -118,17 +118,6 @@ class AnsorEngine(BaseClass):
         with open(output_path + "/deploy_param.params", "wb") as fo:
             fo.write(relay.save_param_dict(params))
 
-    def load(self, input_path):
-        self._print("Load module from %s" % input_path)
-        loaded_json = open(input_path + "/deploy_graph.json").read()
-        loaded_lib = tvm.runtime.load_module(input_path + "/deploy_lib.tar")
-        loaded_params = bytearray(
-            open(input_path + "/deploy_param.params", "rb").read()
-        )
-        self.module = graph_executor.create(loaded_json, loaded_lib, self.device)
-        self.module.load_params(loaded_params)
-        self._print("Compile success.")
-
     def evaluate(self):
         self._print("Evaluate inference time cost...")
         timing_results = self.module.benchmark(

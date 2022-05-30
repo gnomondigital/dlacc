@@ -3,7 +3,7 @@ from utils import JSONConfig, JSONOutput
 import argparse
 
 from optimum import Optimum
-from utils import convert2onnx, upload_outputs, infer_platform_type
+from utils import convert2onnx, upload_outputs, platform_type_infer
 from metadata import platformType, output_prefix
 from pathlib import Path
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    config = JSONConfig(args.path, infer_platform_type(args.path))
+    config = JSONConfig(args.path, platform_type_infer(args.path))
     onnx_model = convert2onnx(
         config["platform_type"],
         config["model_path"],
@@ -30,8 +30,9 @@ if __name__ == "__main__":
     out_json = JSONOutput(config)
     out_json["status"] = 1
     try:
-        optimum = Optimum(config["model_name"], onnx_model, out_json)
+        optimum = Optimum(config["model_name"])
         optimum.run(
+            onnx_model, 
             config["target"],
             config["tuning_config"]["num_measure_trials"],
             config["tuning_config"]["mode"],

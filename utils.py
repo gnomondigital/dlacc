@@ -129,7 +129,7 @@ def upload_blobs_from_directory(
     )
 
 
-def download_from_gcp(url, dst_folder, dst_name: str):
+def download_file_from_gcp(url, dst_folder, dst_name: str):
     output_dir = Path(dst_folder)
     output_dir.mkdir(parents=True, exist_ok=True)
     bucket_name, blob_name = get_bucket_object_name(url)
@@ -137,7 +137,6 @@ def download_from_gcp(url, dst_folder, dst_name: str):
     download_blob(bucket_name, blob_name, destination_file_name)
 
     return destination_file_name
-
 
 def upload_outputs(bucket_name, blob_name, platform_type):
     if platform_type == platformType.GOOGLESTORAGE:
@@ -197,7 +196,7 @@ def convert2onnx(platform_type, model_path, model_type, input_shape, input_dtype
     if platform_type == int(platformType.LOCAL):
         file_path = model_path
     elif platform_type == int(platformType.GOOGLESTORAGE):
-        file_path = download_from_gcp(
+        file_path = download_file_from_gcp(
             model_path, input_prefix, model_path.split("/")[-1]
         )
     else:
@@ -235,7 +234,7 @@ class JSONConfig(BaseClass):
     def load(self, json_path, platform_type):
         path = input_prefix + "/" + json_path
         if platform_type == platformType.GOOGLESTORAGE:
-            path = download_from_gcp(json_path, input_prefix, "config.json")
+            path = download_file_from_gcp(json_path, input_prefix, "config.json")
         elif platform_type == platformType.AWSSTORAGE:
             raise NotImplementedError
         with open(path) as json_file:

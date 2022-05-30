@@ -1,17 +1,17 @@
 from ansor_engine import AnsorEngine
 from base_class import BaseClass
 from graph_module import GraphModuleWrapper
-from utils import infer_platform_type, platformType, download_from_gcp, input_prefix
-
+from utils import infer_platform_type, platformType, download_file_from_gcp
+import tvm
+from tvm.contrib import graph_executor
 
 class Optimum(BaseClass):
-    def __init__(self, model_name, onnx_model, config):
-        self.onnx_model = onnx_model
+    def __init__(self, model_name):
         self.model_name = model_name
-        self.config = config
 
     def run(
         self,
+        onnx_model, 
         target,
         num_measure_trials,
         mode,
@@ -23,7 +23,7 @@ class Optimum(BaseClass):
         if mode == "ansor":
             ae = AnsorEngine(
                 self.model_name,
-                self.onnx_model,
+                onnx_model,
                 target,
                 input_shape,
                 input_dtype,
@@ -42,13 +42,27 @@ class Optimum(BaseClass):
         elif mode == "autotvm":
             raise NotImplementedError
         self.ansor_engine = ae
+        self.onnx_model = onnx_model
 
     def get_model(self):
         return GraphModuleWrapper(self.onnx_model, self.ansor_engine.device)
 
-    def load_model(self, input_path):
+    def load_model(self, input_path, target: str):
         platform_type = infer_platform_type(input_path)
         if platform_type == platformType.GOOGLESTORAGE:
-            path = download_from_gcp(input_path, input_prefix, "config.json")
-        self.ansor_engine.load(input_path)
-        return GraphModuleWrapper(self.ansor_engine.module, self.ansor_engine.device)
+            # TODO: download a directory
+            download_file_from_gcp(input_path + "deploy_graph.json", "./download", "deploy_graph.json")
+            download_file_from_gcp(input_path + "deploy_lib.tar", "./download", "deploy_lib.tar")
+            download_file_from_gcp(input_path + "deploy_param.params", "./download", "deploy_param.params")
+            input_path = "./download"
+        device = tvm.device(str(target), 0)
+        self._print("Load module from %s" % input_path)
+        loaded_json = open(input_path + "/deploy_graph.json").read()
+        loaded_lib = tvm.runtime.load_module(input_path + "/deploy_lib.tar")
+        loaded_params = bytearray(
+            open(input_path + "/deploy_param.params", "rb").read()
+        )
+        module = graph_executor.create(loaded_json, loaded_lib, device)
+        module.load_params(loaded_params)
+        self._print("Compile success.")
+        return GraphModuleWrapper(module)
