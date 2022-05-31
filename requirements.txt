@@ -1,7 +1,4 @@
-torch
 onnx
 onnxruntime
 pandas
 google-cloud-storage
-tensorflow
-tf2onnx

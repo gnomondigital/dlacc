@@ -4,23 +4,39 @@
 ## Build from source
 ```
 git clone https://gitlab.gnomondigital.com/fzyuan/dl_acceleration.git
+DLACC_HOME = ./dl_acceleration
+PYTHONPATH=$DLACC_HOME:${PYTHONPATH}
 ```
 ```
 export TOKENIZERS_PARALLELISM=false
 ```
+## Install via pip
+```
+pip install dlacc
+```
+
+# Python SDK 
+```
+python setup.py sdist bdist_wheel
+cd dist
+pip install dlacc-1.0-py3-none-any.whl
+```
+
 # Features
-- Import HuggingFace Models
 - Automatic Optimization
 - Benchmark with various metrics (mean inference time, improvement compare, ..)
 - Output optimized models
 - Save tuning log
 - Support pytorch and onnx models, for tensorflow models, see https://github.com/onnx/tensorflow-onnx
 # Usage
+## Command line
 ```python
 python3.9 main.py --config example1.json
 ```
+## Python script
+View getting_started.ipynb 
 
-## Supported Target List
+## Supported Targets
 ```
 ['aocl', 'hybrid', 'nvptx', 'sdaccel', 'opencl', 'metal', 'hexagon', 'aocl_sw_emu', 'rocm', 'webgpu', 'llvm', 'cuda', 'vulkan', 'ext_dev', 'c']
 ```
