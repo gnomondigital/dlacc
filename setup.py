@@ -39,7 +39,8 @@ setup(
         "onnx",
         "onnxruntime",
         "pandas",
-        "google-cloud-storage"
+        "google-cloud-storage",
+        "tvm"
     ],
     extras_require={},
 )
