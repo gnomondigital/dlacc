@@ -1,6 +1,4 @@
 import io
-import re
-
 from setuptools import find_packages
 from setuptools import setup
 
@@ -20,8 +18,6 @@ setup(
     long_description=readme,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
-        "Environment :: Web Environment",
-        "Framework :: Flask",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
