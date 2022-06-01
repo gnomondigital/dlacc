@@ -8,8 +8,8 @@ def read(fname):
 
 setup(
     name="dlacc",
-    version=1.7,
-    url="https://gitlab.gnomondigital.com/fzyuan/dl_acceleration",
+    version=1.8,
+    url="https://github.com/gnomondigital/dlacc.git",
     project_urls={},
     license="Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)",
     author="gnomondigital",
