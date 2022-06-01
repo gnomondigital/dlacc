@@ -1,9 +1,27 @@
-from ansor_engine import AnsorEngine
-from base_class import BaseClass
-from graph_module import GraphModuleWrapper
-from utils import infer_platform_type, platformType, download_file_from_gcp
-import tvm
 from tvm.contrib import graph_executor
+import tvm
+from .ansor_engine import AnsorEngine
+from .base_class import BaseClass
+from .utils import infer_platform_type, platformType, download_file_from_gcp
+
+
+class GraphModuleWrapper:
+    def __init__(self, module):
+        self.module = module
+
+    def __call__(self, inputs_dict):
+        self.module.set_input(**inputs_dict)
+        self.module.run()
+        num_outputs = self.module.get_num_outputs()
+        tvm_outputs = {}
+        for i in range(num_outputs):
+            output_name = "output_{}".format(i)
+            tvm_outputs[output_name] = self.module.get_output(i).numpy()
+        return tvm_outputs
+
+    def predict(self, inputs_dict):
+        return self.__call__(inputs_dict)
+
 
 class Optimum(BaseClass):
     def __init__(self, model_name):
@@ -11,7 +29,7 @@ class Optimum(BaseClass):
 
     def run(self, onnx_model, config):
         return self._run(
-            onnx_model, 
+            onnx_model,
             config["target"],
             config["tuning_config"]["num_measure_trials"],
             config["tuning_config"]["mode"],
@@ -19,12 +37,12 @@ class Optimum(BaseClass):
             log_file=config["tuned_log"],
             input_shape=config["model_config"]["input_shape"],
             input_dtype=config["model_config"]["input_dtype"],
-            verbose=config["tuning_config"]["verbose_print"]
+            verbose=config["tuning_config"]["verbose_print"],
         )
 
     def _run(
         self,
-        onnx_model, 
+        onnx_model,
         target,
         num_measure_trials,
         mode,
@@ -32,7 +50,7 @@ class Optimum(BaseClass):
         input_shape=None,
         input_dtype=None,
         log_file=None,
-        verbose=0
+        verbose=0,
     ):
         if mode == "ansor":
             ae = AnsorEngine(
@@ -51,8 +69,7 @@ class Optimum(BaseClass):
                 ae.ansor_compile(log_file=log_file)
             else:
                 ae.ansor_run_tuning(
-                    num_measure_trials=num_measure_trials,
-                    verbose=verbose
+                    num_measure_trials=num_measure_trials, verbose=verbose
                 )
         elif mode == "autotvm":
             raise NotImplementedError
@@ -66,9 +83,15 @@ class Optimum(BaseClass):
         platform_type = infer_platform_type(input_path)
         if platform_type == platformType.GOOGLESTORAGE:
             # TODO: download a directory
-            download_file_from_gcp(input_path + "deploy_graph.json", "./download", "deploy_graph.json")
-            download_file_from_gcp(input_path + "deploy_lib.tar", "./download", "deploy_lib.tar")
-            download_file_from_gcp(input_path + "deploy_param.params", "./download", "deploy_param.params")
+            download_file_from_gcp(
+                input_path + "deploy_graph.json", "./download", "deploy_graph.json"
+            )
+            download_file_from_gcp(
+                input_path + "deploy_lib.tar", "./download", "deploy_lib.tar"
+            )
+            download_file_from_gcp(
+                input_path + "deploy_param.params", "./download", "deploy_param.params"
+            )
             input_path = "./download"
         device = tvm.device(str(target), 0)
         self._print("Load module from %s" % input_path)

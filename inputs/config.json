@@ -1,0 +1,28 @@
+{
+    "job_id": "100004",
+    "status": 0,
+    "model_name" : "CDAE",
+    "model_path": "gs://gnomondigital-sandbox-tvm-job-input/job_id=100004/CDAE.onnx",
+    "output_bucket": "gnomondigital-sdx-tvm-turning-job-output",
+    "platform_type": 1,
+    "model_type" : 2,
+    "domain_type": "recsys",
+    "target": "llvm -mcpu cascadelake",
+    "model_config":{
+        "input_shape":{
+            "input":[175], 
+            "rating_matrix":[175, 1682]
+        },
+        "input_dtype":{
+            "input":"int64", 
+            "rating_matrix":"float32"   
+        }
+    },
+    "tuning_config": {
+        "mode": "ansor",
+        "num_measure_trials": 10
+    },
+    
+    "tuned_log":"",
+    "need_benchmark" : true
+}

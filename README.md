@@ -3,23 +3,19 @@
 # Installation
 ## Build from source
 ```
-git clone https://gitlab.gnomondigital.com/fzyuan/dl_acceleration.git
-DLACC_HOME = ./dl_acceleration
+git clone https://github.com/gnomondigital/dlacc.git
+DLACC_HOME = ./dlacc
 PYTHONPATH=$DLACC_HOME:${PYTHONPATH}
-```
-```
-export TOKENIZERS_PARALLELISM=false
 ```
 ## Install via pip
 ```
 pip install dlacc
 ```
 
-# Python SDK 
+# Python SDK
 ```
-python setup.py sdist bdist_wheel
-cd dist
-pip install dlacc-1.0-py3-none-any.whl
+python3.9 setup.py sdist bdist_wheel
+python3.9 -m twine upload dist/* --verbose
 ```
 
 # Features
@@ -27,14 +23,13 @@ pip install dlacc-1.0-py3-none-any.whl
 - Benchmark with various metrics (mean inference time, improvement compare, ..)
 - Output optimized models
 - Save tuning log
-- Support pytorch and onnx models, for tensorflow models, see https://github.com/onnx/tensorflow-onnx
 # Usage
 ## Command line
 ```python
-python3.9 main.py --config example1.json
+python3.9 main.py --path example1.json
 ```
 ## Python script
-View getting_started.ipynb 
+View examples/getting_started.ipynb 
 
 ## Supported Targets
 ```

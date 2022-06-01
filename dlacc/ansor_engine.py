@@ -1,17 +1,15 @@
-from base_class import BaseClass
-import os
 import tvm
 from tvm import auto_scheduler
 import tvm.relay as relay
 from tvm.contrib import graph_executor
-from metadata import output_prefix, input_prefix
 import numpy as np
 import timeit
 import onnxruntime as ort
 import pandas as pd
-
-# from tvm.contrib.debugger import debug_executor as graph_executor
 from pathlib import Path
+
+from .metadata import output_prefix, input_prefix
+from .base_class import BaseClass
 
 DEBUG_MODE = False
 
@@ -32,11 +30,7 @@ class AnsorEngine(BaseClass):
         self.input_dtype = input_dtype
         self.onnx_model = traced_model
 
-    def ansor_run_tuning(
-        self,
-        num_measure_trials=500,
-        verbose=0
-    ):
+    def ansor_run_tuning(self, num_measure_trials=500, verbose=0):
         self._print("Run tuning for network=%s" % self.network_name)
 
         self.log_file = output_prefix + (
@@ -58,7 +52,7 @@ class AnsorEngine(BaseClass):
             ),
             early_stopping=300,
             measure_callbacks=[auto_scheduler.RecordToFile(self.log_file)],
-            verbose=verbose
+            verbose=verbose,
         )
         use_sparse = False
         if use_sparse:

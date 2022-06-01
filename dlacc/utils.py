@@ -138,6 +138,7 @@ def download_file_from_gcp(url, dst_folder, dst_name: str):
 
     return destination_file_name
 
+
 def upload_outputs(bucket_name, blob_name, platform_type):
     if platform_type == platformType.GOOGLESTORAGE:
         upload_blobs_from_directory(output_prefix, bucket_name, blob_name)
