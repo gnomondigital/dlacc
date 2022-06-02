@@ -1,3 +1,15 @@
+"""! @brief Defines the Optimum class."""
+##
+# @file optimum.py
+#
+# @brief Defines the Optimum class.
+#
+# @section author_sensors Author(s)
+# - Created by Gnomondigital on 02/06/2022.
+# - Modified by Gnomondigital on 02/06/2022.
+#
+# Copyright (c) 2022 Gnomondigital.  All rights reserved.
+
 from tvm.contrib import graph_executor
 import tvm
 from .ansor_engine import AnsorEngine
@@ -24,10 +36,18 @@ class GraphModuleWrapper:
 
 
 class Optimum(BaseClass):
-    def __init__(self, model_name):
+    """! Optimum main class. """
+    def __init__(self, model_name: str):
+        """!
+        @param model_name   The name of model
+        """
         self.model_name = model_name
 
-    def run(self, onnx_model, config):
+    def run(self, onnx_model, config: dict):
+        """ Run optimization process.
+        @param onnx_model   Onnx model object
+        @param config       Parameter configuration file
+        """
         return self._run(
             onnx_model,
             config["target"],
@@ -80,6 +100,12 @@ class Optimum(BaseClass):
         return GraphModuleWrapper(self.ansor_engine.module)
 
     def load_model(self, input_path, target: str):
+        """ load optimized model
+        @param input_path   The directory containing only 3 files: deploy_graph.json, deploy_lib.tar, deploy_param.params.
+                            Do not specify a single file.
+        @param target       the target 
+        @return model       Runnable module, GraphModuleWrapper object
+        """
         platform_type = infer_platform_type(input_path)
         if platform_type == platformType.GOOGLESTORAGE:
             # TODO: download a directory

@@ -1,3 +1,16 @@
+
+"""! @brief Defines the AnsorEngine class."""
+##
+# @file ansor_engine.py
+#
+# @brief Defines the AnsorEngine class.
+#
+# @section author_sensors Author(s)
+# - Created by Gnomondigital on 02/06/2022.
+# - Modified by Gnomondigital on 02/06/2022.
+#
+# Copyright (c) 2022 Gnomondigital.  All rights reserved.
+
 import tvm
 from tvm import auto_scheduler
 import tvm.relay as relay
@@ -12,6 +25,10 @@ from .metadata import output_prefix, input_prefix
 from .base_class import BaseClass
 
 class AnsorEngine(BaseClass):
+    """! AnsorEngine based on TVM's auto scheduler module. 
+         It is able to automatically generate schedules for operators using evolutionary algorithm
+         and evaluate population with ML methods like XGBoost.
+    """
     def __init__(
         self, network_name, traced_model, target, input_shape, input_dtype, out_json
     ) -> None:
@@ -80,6 +97,7 @@ class AnsorEngine(BaseClass):
         return self
 
     def ansor_compile(self, log_file=None):
+        """! Compile with historical log file """
         output_path = output_prefix + "/optimized_model"
         if log_file:
             self.log_file = log_file
@@ -107,6 +125,9 @@ class AnsorEngine(BaseClass):
             fo.write(relay.save_param_dict(params))
 
     def evaluate(self):
+        """! Repeat executing prediction and record time cost. Compared with the not optimized model.
+             May be time consuming.
+        """
         self._print("Evaluate inference time cost...")
         timing_results = self.module.benchmark(
             self.device, repeat=5, number=10, end_to_end=True

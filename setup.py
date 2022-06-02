@@ -8,7 +8,7 @@ def read(fname):
 
 setup(
     name="dlacc",
-    version=1.8,
+    version=1.9,
     url="https://github.com/gnomondigital/dlacc.git",
     project_urls={},
     license="Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)",

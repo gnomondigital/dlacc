@@ -8,3 +8,11 @@ benchmark/
 execution_log.txt
 tvmdbg/
 jit_traced_models/
+build/lib/dlacc/
+Doxyfile.bak
+upload.sh
+dist/*
+.gitignore
+dlacc.egg-info/*
+doc/html/*
+doc/latex/*
