@@ -20,7 +20,8 @@
     },
     "tuning_config": {
         "mode": "ansor",
-        "num_measure_trials": 10
+        "num_measure_trials": 10,
+        "verbose_output": 1
     },
     
     "tuned_log":"",

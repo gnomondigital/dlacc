@@ -1,14 +1,14 @@
 from google.cloud import storage
-from metadata import ModelType, platformType, input_prefix, output_prefix
 from pathlib import Path
 import os
-from base_class import BaseClass
 import json
 import re
 import glob
 import numpy as np
 import onnx
 
+from .base_class import BaseClass
+from .metadata import ModelType, platformType, input_prefix, output_prefix
 
 def get_traced_model(
     origin_model, example_inputs, save_path=None, model_name="default_network_name"

@@ -35,8 +35,8 @@ if __name__ == "__main__":
     out_json = JSONOutput(config)
     out_json["status"] = 1
     try:
-        optimum = Optimum(config["model_name"])
-        optimum.run(onnx_model, config)
+        optimum = Optimum(out_json["model_name"])
+        optimum.run(onnx_model, out_json)
     except Exception as e:
         traceback.print_exc()
         out_json["error_info"] = str(e)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         optimum.ansor_engine.evaluate()
 
     upload_outputs(
-        config["output_bucket"],
+        out_json["output_bucket"],
         "job_id=%s" % config["job_id"],
         platformType.GOOGLESTORAGE,
     )

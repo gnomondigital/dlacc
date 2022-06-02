@@ -11,9 +11,6 @@ from pathlib import Path
 from .metadata import output_prefix, input_prefix
 from .base_class import BaseClass
 
-DEBUG_MODE = False
-
-
 class AnsorEngine(BaseClass):
     def __init__(
         self, network_name, traced_model, target, input_shape, input_dtype, out_json
@@ -97,12 +94,7 @@ class AnsorEngine(BaseClass):
         Path(output_path).mkdir(parents=True, exist_ok=True)
         self._save(output_path, lib, graph, graph_params)
         self.device = tvm.device(str(self.target), 0)
-        if DEBUG_MODE:
-            self.module = graph_executor.create(
-                graph, lib, self.device, dump_root="./tvmdbg"
-            )
-        else:
-            self.module = graph_executor.create(graph, lib, self.device)
+        self.module = graph_executor.create(graph, lib, self.device)
         self._print("Compile success.")
         self.out_json["status"] = 3
         return self
