@@ -14,5 +14,5 @@ class ModelType(enum.IntEnum):
     KERAS = 3
 
 
-input_prefix = "./inputs"
-output_prefix = "./outputs"
+input_prefix = "../inputs"
+output_prefix = "../outputs"
