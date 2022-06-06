@@ -1,3 +1,5 @@
+
+"""! @brief Defines the AnsorEngine class."""
 ##
 # @file ansor_engine.py
 #
@@ -18,34 +20,17 @@ import timeit
 import onnxruntime as ort
 import pandas as pd
 from pathlib import Path
-import onnx
 
-from metadata import output_prefix, input_prefix
-from base_class import BaseClass
+from .metadata import output_prefix, input_prefix
+from .base_class import BaseClass
 
 class AnsorEngine(BaseClass):
-    """AnsorEngine based on TVM's auto scheduler module. 
-
-    It is able to automatically generate schedules for operators using evolutionary algorithm
-    and evaluate population with ML methods like XGBoost.
-
-    Attributes
-    ----------
-    network_name : str
-        The name of neural network.
-    traced_model : onnx.onnx_ml_pb2.ModelProto
-        Onnx model object.
-    target : str
-        Target string.
-    input_shape: list[int]
-        A list of integers describing dimension of input, batch size first.
-    input_dtype: list[str]
-        A list of strings describing datatype of input in string format. Should be one of "int32", "int64", "float32", "float64".
-    out_json: dict
-        The output json dictionnary which contains information about runtime.
+    """! AnsorEngine based on TVM's auto scheduler module. 
+         It is able to automatically generate schedules for operators using evolutionary algorithm
+         and evaluate population with ML methods like XGBoost.
     """
     def __init__(
-        self, network_name: str, traced_model: onnx.onnx_ml_pb2.ModelProto, target: str, input_shape: list[int], input_dtype: list[str], out_json: dict
+        self, network_name, traced_model, target, input_shape, input_dtype, out_json
     ) -> None:
         self.network_name = network_name.replace("/", "_")
         mod, params = relay.frontend.from_onnx(
@@ -59,21 +44,7 @@ class AnsorEngine(BaseClass):
         self.input_dtype = input_dtype
         self.onnx_model = traced_model
 
-    def ansor_run_tuning(self, num_measure_trials: int = 500, verbose: int = 0):
-        """Run automatic tuning process. The output json file will be saved in local folder. Its filename will be marked with "finished" if tuning process succeed.
-
-        Parameters
-        ----------
-        num_measure_trials : int, optional
-            The number of measurement trials, by default 500. The search policy measures num_measure_trials schedules in total and returns the best one among them. With num_measure_trials == 0, the policy will do the schedule search but won’t involve measurement. This can be used to get a runnable schedule quickly without auto-tuning.
-        verbose : int, optional
-            Whether outputing terminal in verbose mode, by default 0.
-
-        Returns
-        -------
-        AnsorEngine
-            Returns self.
-        """
+    def ansor_run_tuning(self, num_measure_trials=500, verbose=0):
         self._print("Run tuning for network=%s" % self.network_name)
 
         self.log_file = output_prefix + (
@@ -125,19 +96,8 @@ class AnsorEngine(BaseClass):
         self.ansor_compile(self.log_file)
         return self
 
-    def ansor_compile(self, log_file: str = None):
-        """Compile tvm model with historical tuning log file.
-
-        Parameters
-        ----------
-        log_file : str, optional
-            The tuning log file path, by default None. If passed, then compile with this path.
-
-        Returns
-        -------
-        AnsorEngine
-            Returns self.
-        """
+    def ansor_compile(self, log_file=None):
+        """! Compile with historical log file """
         output_path = output_prefix + "/optimized_model"
         if log_file:
             self.log_file = log_file
@@ -165,7 +125,9 @@ class AnsorEngine(BaseClass):
             fo.write(relay.save_param_dict(params))
 
     def evaluate(self):
-        """Repeat executing prediction while recording time cost. Compared with the not optimized model. May be time consuming."""
+        """! Repeat executing prediction and record time cost. Compared with the not optimized model.
+             May be time consuming.
+        """
         self._print("Evaluate inference time cost...")
         timing_results = self.module.benchmark(
             self.device, repeat=5, number=10, end_to_end=True

@@ -7,9 +7,8 @@ import glob
 import numpy as np
 import onnx
 
-from base_class import BaseClass
-from metadata import ModelType, platformType, input_prefix, output_prefix
-
+from .base_class import BaseClass
+from .metadata import ModelType, platformType, input_prefix, output_prefix
 
 def get_traced_model(
     origin_model, example_inputs, save_path=None, model_name="default_network_name"
@@ -193,7 +192,7 @@ def contruct_dummy_input(input_shape, input_dtype, tensor_type, device="cuda"):
     return dummy_input
 
 
-def get_onnx_model(platform_type, model_path, model_type, input_shape, input_dtype):
+def convert2onnx(platform_type, model_path, model_type, input_shape, input_dtype):
     file_path = None
     if platform_type == int(platformType.LOCAL):
         file_path = model_path
