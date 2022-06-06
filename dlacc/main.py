@@ -2,15 +2,15 @@ import traceback
 import argparse
 from pathlib import Path
 
-from .optimum import Optimum
-from .utils import (
-    convert2onnx,
+from optimum import Optimum
+from utils import (
+    get_onnx_model,
     upload_outputs,
     infer_platform_type,
     JSONConfig,
     JSONOutput,
 )
-from .metadata import platformType, output_prefix
+from metadata import platformType, output_prefix
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = JSONConfig(args.path, infer_platform_type(args.path))
-    onnx_model = convert2onnx(
+    onnx_model = get_onnx_model(
         config["platform_type"],
         config["model_path"],
         config["model_type"],
